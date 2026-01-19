@@ -1,0 +1,182 @@
+@model WMS.Web.Models.LocationListViewModel
+@{
+    ViewData["Title"] = "Locations";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-geo-alt"></i> Locations</h2>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add New Location
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <form method="get" class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <input type="text" name="searchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Search by code or name..." />
+                </div>
+                <div class="col-md-2">
+                    <select name="filterStatus" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="active" selected="@(Model.FilterStatus == "active")">Active</option>
+                        <option value="inactive" selected="@(Model.FilterStatus == "inactive")">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="filterType" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="Warehouse" selected="@(Model.FilterType == "Warehouse")">Warehouse</option>
+                        <option value="Zone" selected="@(Model.FilterType == "Zone")">Zone</option>
+                        <option value="Aisle" selected="@(Model.FilterType == "Aisle")">Aisle</option>
+                        <option value="Rack" selected="@(Model.FilterType == "Rack")">Rack</option>
+                        <option value="Shelf" selected="@(Model.FilterType == "Shelf")">Shelf</option>
+                        <option value="Bin" selected="@(Model.FilterType == "Bin")">Bin</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+
+            @if (Model.Locations.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Zone</th>
+                                <th>Aisle</th>
+                                <th>Rack</th>
+                                <th>Capacity</th>
+                                <th>Occupied</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var location in Model.Locations)
+                            {
+                                var utilization = location.Capacity > 0 ? (location.OccupiedCapacity / location.Capacity * 100) : 0;
+                                var utilizationClass = utilization > 90 ? "danger" : utilization > 70 ? "warning" : "success";
+                                
+                                <tr>
+                                    <td>@location.Code</td>
+                                    <td>@location.Name</td>
+                                    <td><span class="badge bg-info">@location.Type</span></td>
+                                    <td>@(location.Zone ?? "-")</td>
+                                    <td>@(location.Aisle ?? "-")</td>
+                                    <td>@(location.Rack ?? "-")</td>
+                                    <td>@location.Capacity</td>
+                                    <td>
+                                        @location.OccupiedCapacity
+                                        <div class="progress" style="height: 5px;">
+                                            <div class="progress-bar bg-@utilizationClass" role="progressbar" style="width: @utilization%" aria-valuenow="@utilization" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (location.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@location.Id" class="btn btn-sm btn-info" title="Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@location.Id" class="btn btn-sm btn-warning" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            @if (location.IsActive)
+                                            {
+                                                <form asp-action="Deactivate" asp-route-id="@location.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-secondary" title="Deactivate" onclick="return confirm('Deactivate this location?');">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <form asp-action="Activate" asp-route-id="@location.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-success" title="Activate" onclick="return confirm('Activate this location?');">
+                                                        <i class="bi bi-check-circle"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            <form asp-action="Delete" asp-route-id="@location.Id" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Delete" onclick="return confirm('Delete this location? This cannot be undone.');">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        Showing @((Model.PageNumber - 1) * Model.PageSize + 1) to @Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount) of @Model.TotalCount locations
+                    </div>
+                    <nav>
+                        <ul class="pagination mb-0">
+                            <li class="page-item @(Model.PageNumber == 1 ? "disabled" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-pageSize="@Model.PageSize" asp-route-searchTerm="@Model.SearchTerm" asp-route-filterStatus="@Model.FilterStatus" asp-route-filterType="@Model.FilterType">Previous</a>
+                            </li>
+                            @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                            {
+                                <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@i" asp-route-pageSize="@Model.PageSize" asp-route-searchTerm="@Model.SearchTerm" asp-route-filterStatus="@Model.FilterStatus" asp-route-filterType="@Model.FilterType">@i</a>
+                                </li>
+                            }
+                            <li class="page-item @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                                <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-pageSize="@Model.PageSize" asp-route-searchTerm="@Model.SearchTerm" asp-route-filterStatus="@Model.FilterStatus" asp-route-filterType="@Model.FilterType">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i> No locations found.
+                </div>
+            }
+        </div>
+    </div>
+</div>

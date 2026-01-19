@@ -1,0 +1,124 @@
+@model WMS.Web.Models.CreateProductViewModel
+@{
+    ViewData["Title"] = "Create Product";
+}
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-plus-circle"></i> Create New Product</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="SKU" class="form-label"></label>
+                            <input asp-for="SKU" class="form-control" placeholder="PROD-001" />
+                            <span asp-validation-for="SKU" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Name" class="form-label"></label>
+                            <input asp-for="Name" class="form-control" placeholder="Product Name" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Product description"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="UOM" class="form-label"></label>
+                            <select asp-for="UOM" class="form-select">
+                                <option value="">Select UOM</option>
+                                <option value="PCS">Pieces (PCS)</option>
+                                <option value="BOX">Box</option>
+                                <option value="CTN">Carton</option>
+                                <option value="KG">Kilogram</option>
+                                <option value="LTR">Liter</option>
+                                <option value="MTR">Meter</option>
+                            </select>
+                            <span asp-validation-for="UOM" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Category" class="form-label"></label>
+                            <input asp-for="Category" class="form-control" placeholder="Electronics, Food, etc." />
+                            <span asp-validation-for="Category" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Barcode" class="form-label"></label>
+                            <input asp-for="Barcode" class="form-control" placeholder="Barcode" />
+                            <span asp-validation-for="Barcode" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">Dimensions & Weight</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label asp-for="Weight" class="form-label">Weight (kg)</label>
+                            <input asp-for="Weight" type="number" step="0.01" class="form-control" />
+                            <span asp-validation-for="Weight" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label asp-for="Length" class="form-label">Length (cm)</label>
+                            <input asp-for="Length" type="number" step="0.01" class="form-control" />
+                            <span asp-validation-for="Length" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label asp-for="Width" class="form-label">Width (cm)</label>
+                            <input asp-for="Width" type="number" step="0.01" class="form-control" />
+                            <span asp-validation-for="Width" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label asp-for="Height" class="form-label">Height (cm)</label>
+                            <input asp-for="Height" type="number" step="0.01" class="form-control" />
+                            <span asp-validation-for="Height" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">Stock Management</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ReorderLevel" class="form-label"></label>
+                            <input asp-for="ReorderLevel" type="number" step="0.01" class="form-control" placeholder="Minimum stock level" />
+                            <span asp-validation-for="ReorderLevel" class="text-danger"></span>
+                            <small class="text-muted">Alert when stock falls below this level</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="MaxStockLevel" class="form-label"></label>
+                            <input asp-for="MaxStockLevel" type="number" step="0.01" class="form-control" placeholder="Maximum stock level" />
+                            <span asp-validation-for="MaxStockLevel" class="text-danger"></span>
+                            <small class="text-muted">Maximum stock to maintain</small>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Create Product
+                        </button>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

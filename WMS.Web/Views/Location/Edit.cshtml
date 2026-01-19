@@ -1,0 +1,124 @@
+@model WMS.Web.Models.EditLocationViewModel
+@{
+    ViewData["Title"] = "Edit Location";
+    var parentLocations = ViewBag.ParentLocations as List<WMS.Web.Models.LocationViewModel> ?? new List<WMS.Web.Models.LocationViewModel>();
+}
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-pencil"></i> Edit Location</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <h5 class="mb-3">Basic Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Code" class="form-label"></label>
+                            <input asp-for="Code" class="form-control" />
+                            <span asp-validation-for="Code" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Name" class="form-label"></label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Type" class="form-label"></label>
+                            <select asp-for="Type" class="form-select">
+                                <option value="">Select Type</option>
+                                <option value="Warehouse">Warehouse</option>
+                                <option value="Zone">Zone</option>
+                                <option value="Aisle">Aisle</option>
+                                <option value="Rack">Rack</option>
+                                <option value="Shelf">Shelf</option>
+                                <option value="Bin">Bin</option>
+                            </select>
+                            <span asp-validation-for="Type" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Capacity" class="form-label"></label>
+                            <input asp-for="Capacity" type="number" step="0.01" class="form-control" />
+                            <span asp-validation-for="Capacity" class="text-danger"></span>
+                            <small class="form-text text-muted">Storage capacity in cubic meters</small>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">Location Details</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Zone" class="form-label"></label>
+                            <input asp-for="Zone" class="form-control" />
+                            <span asp-validation-for="Zone" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Aisle" class="form-label"></label>
+                            <input asp-for="Aisle" class="form-control" />
+                            <span asp-validation-for="Aisle" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Rack" class="form-label"></label>
+                            <input asp-for="Rack" class="form-control" />
+                            <span asp-validation-for="Rack" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Shelf" class="form-label"></label>
+                            <input asp-for="Shelf" class="form-control" />
+                            <span asp-validation-for="Shelf" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Bin" class="form-label"></label>
+                            <input asp-for="Bin" class="form-control" />
+                            <span asp-validation-for="Bin" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ParentLocationId" class="form-label">Parent Location</label>
+                        <select asp-for="ParentLocationId" class="form-select">
+                            <option value="">None (Top Level)</option>
+                            @foreach (var loc in parentLocations)
+                            {
+                                <option value="@loc.Id">@loc.Code - @loc.Name (@loc.Type)</option>
+                            }
+                        </select>
+                        <span asp-validation-for="ParentLocationId" class="text-danger"></span>
+                        <small class="form-text text-muted">Optional: Select a parent location for hierarchical structure</small>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Update Location
+                        </button>
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-info">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,85 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace WMS.Web.Models
+{
+    public class OutboundListViewModel
+    {
+        public List<OutboundViewModel> Items { get; set; } = new();
+        public int TotalCount { get; set; }
+        public int CurrentPage { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages => (int)Math.Ceiling(TotalCount / (double)PageSize);
+        public string? SearchTerm { get; set; }
+        public string? FilterStatus { get; set; }
+    }
+
+    public class OutboundViewModel
+    {
+        public int Id { get; set; }
+        public string ReferenceNumber { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime OrderDate { get; set; }
+        public DateTime? ShippedDate { get; set; }
+        public string? TrackingNumber { get; set; }
+        public int TotalItems { get; set; }
+        public int PickedItems { get; set; }
+        public string? ShippingAddress { get; set; }
+        public string? Notes { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string? UpdatedBy { get; set; }
+        public List<OutboundItemViewModel> Items { get; set; } = new();
+    }
+
+    public class OutboundItemViewModel
+    {
+        public int Id { get; set; }
+        public int OutboundId { get; set; }
+        public int ProductId { get; set; }
+        public string ProductSku { get; set; } = string.Empty;
+        public string ProductName { get; set; } = string.Empty;
+        public int LocationId { get; set; }
+        public string LocationCode { get; set; } = string.Empty;
+        public string LocationName { get; set; } = string.Empty;
+        public decimal OrderedQuantity { get; set; }
+        public decimal PickedQuantity { get; set; }
+        public string UOM { get; set; } = string.Empty;
+    }
+
+    public class CreateOutboundViewModel
+    {
+        [Required]
+        [StringLength(50)]
+        public string ReferenceNumber { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(200)]
+        public string CustomerName { get; set; } = string.Empty;
+
+        [Required]
+        public DateTime OrderDate { get; set; } = DateTime.Now;
+
+        [StringLength(500)]
+        public string? ShippingAddress { get; set; }
+
+        [StringLength(500)]
+        public string? Notes { get; set; }
+
+        public List<CreateOutboundItemViewModel> Items { get; set; } = new();
+    }
+
+    public class CreateOutboundItemViewModel
+    {
+        [Required]
+        public int ProductId { get; set; }
+
+        [Required]
+        public int LocationId { get; set; }
+
+        [Required]
+        [Range(0.01, double.MaxValue)]
+        public decimal OrderedQuantity { get; set; }
+    }
+}

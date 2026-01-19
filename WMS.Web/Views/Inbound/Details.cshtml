@@ -1,0 +1,275 @@
+@model WMS.Web.Models.InboundViewModel
+@{
+    ViewData["Title"] = "Inbound Order Details";
+    var statusClass = Model.Status switch
+    {
+        "Draft" => "bg-secondary",
+        "Receiving" => "bg-info",
+        "Completed" => "bg-success",
+        "Cancelled" => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Inbound Order Details</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                    <li class="breadcrumb-item"><a asp-controller="Inbound" asp-action="Index">Inbound Orders</a></li>
+                    <li class="breadcrumb-item active">@Model.ReferenceNumber</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+            @if (Model.Status == "Draft")
+            {
+                <a asp-action="Receive" asp-route-id="@Model.Id" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-in-down"></i> Start Receiving
+                </a>
+            }
+            else if (Model.Status == "Receiving")
+            {
+                <a asp-action="Receive" asp-route-id="@Model.Id" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-in-down"></i> Continue Receiving
+                </a>
+                <button type="button" class="btn btn-success" onclick="confirmComplete(@Model.Id)">
+                    <i class="bi bi-check-circle"></i> Complete Order
+                </button>
+            }
+            @if (Model.Status != "Completed" && Model.Status != "Cancelled")
+            {
+                <button type="button" class="btn btn-danger" onclick="confirmCancel(@Model.Id)">
+                    <i class="bi bi-x-circle"></i> Cancel Order
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Order Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Reference Number</label>
+                            <div class="fw-bold">@Model.ReferenceNumber</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Status</label>
+                            <div>
+                                <span class="badge @statusClass">@Model.Status</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Supplier</label>
+                            <div class="fw-bold">@Model.SupplierName</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Expected Date</label>
+                            <div>@Model.ExpectedDate.ToString("MMM dd, yyyy")</div>
+                        </div>
+                    </div>
+                    @if (Model.ReceivedDate.HasValue)
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="text-muted small">Received Date</label>
+                                <div>@Model.ReceivedDate.Value.ToString("MMM dd, yyyy HH:mm")</div>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <div class="row">
+                            <div class="col-12">
+                                <label class="text-muted small">Notes</label>
+                                <div>@Model.Notes</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th>Location</th>
+                                    <th class="text-end">Expected</th>
+                                    <th class="text-end">Received</th>
+                                    <th class="text-end">Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Items)
+                                {
+                                    var progress = item.ExpectedQuantity > 0 ? (int)((item.ReceivedQuantity / (decimal)item.ExpectedQuantity) * 100) : 0;
+                                    var progressClass = progress >= 100 ? "bg-success" : progress > 0 ? "bg-info" : "bg-secondary";
+                                    <tr>
+                                        <td>@item.ProductName</td>
+                                        <td><code>@item.ProductSku</code></td>
+                                        <td>@item.LocationName</td>
+                                        <td class="text-end">@item.ExpectedQuantity</td>
+                                        <td class="text-end fw-bold">@item.ReceivedQuantity</td>
+                                        <td class="text-end">
+                                            <div class="d-flex align-items-center justify-content-end">
+                                                <div class="progress flex-grow-1 me-2" style="height: 20px; max-width: 100px;">
+                                                    <div class="progress-bar @progressClass" role="progressbar" style="width: @progress%" aria-valuenow="@progress" aria-valuemin="0" aria-valuemax="100">
+                                                        @if (progress > 15)
+                                                        {
+                                                            <span>@progress%</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                @if (progress < 15)
+                                                {
+                                                    <small class="text-muted">@progress%</small>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Total Items:</span>
+                        <span class="fw-bold">@Model.Items.Count</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Expected Quantity:</span>
+                        <span class="fw-bold">@Model.Items.Sum(i => i.ExpectedQuantity)</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Received Quantity:</span>
+                        <span class="fw-bold text-primary">@Model.Items.Sum(i => i.ReceivedQuantity)</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Overall Progress:</span>
+                        <span class="fw-bold">
+                            @{
+                                var totalExpected = Model.Items.Sum(i => i.ExpectedQuantity);
+                                var totalReceived = Model.Items.Sum(i => i.ReceivedQuantity);
+                                var overallProgress = totalExpected > 0 ? (int)((totalReceived / (decimal)totalExpected) * 100) : 0;
+                            }
+                            @overallProgress%
+                        </span>
+                    </div>
+                    <div class="progress mt-2" style="height: 25px;">
+                        <div class="progress-bar @(overallProgress >= 100 ? "bg-success" : overallProgress > 0 ? "bg-info" : "bg-secondary")" role="progressbar" style="width: @overallProgress%" aria-valuenow="@overallProgress" aria-valuemin="0" aria-valuemax="100">
+                            @overallProgress%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Audit Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small">Created By</label>
+                        <div>@Model.CreatedBy</div>
+                        <small class="text-muted">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                    </div>
+                    @if (Model.UpdatedAt.HasValue)
+                    {
+                        <div>
+                            <label class="text-muted small">Last Updated By</label>
+                            <div>@Model.UpdatedBy</div>
+                            <small class="text-muted">@Model.UpdatedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmComplete(id) {
+            if (confirm('Are you sure you want to mark this order as complete? This action cannot be undone.')) {
+                fetch('@Url.Action("Complete", "Inbound")/' + id, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to complete order. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    alert('An error occurred. Please try again.');
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+        function confirmCancel(id) {
+            if (confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
+                fetch('@Url.Action("Cancel", "Inbound")/' + id, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to cancel order. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    alert('An error occurred. Please try again.');
+                    console.error('Error:', error);
+                });
+            }
+        }
+    </script>
+}

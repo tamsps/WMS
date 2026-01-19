@@ -1,0 +1,274 @@
+@model WMS.Web.Models.OutboundViewModel
+@{
+    ViewData["Title"] = "Ship Outbound Order";
+    var statusClass = Model.Status switch
+    {
+        "Draft" => "bg-secondary",
+        "Picking" => "bg-warning",
+        "Picked" => "bg-info",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Ship Outbound Order</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                    <li class="breadcrumb-item"><a asp-controller="Outbound" asp-action="Index">Outbound Orders</a></li>
+                    <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id">@Model.ReferenceNumber</a></li>
+                    <li class="breadcrumb-item active">Ship</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Details
+            </a>
+        </div>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Please correct the following errors:</strong>
+            <ul class="mb-0">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form asp-action="Ship" method="post" id="shipForm">
+        <input type="hidden" name="id" value="@Model.Id" />
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Order Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="text-muted small">Reference Number</label>
+                                <div class="fw-bold">@Model.ReferenceNumber</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">Customer</label>
+                                <div class="fw-bold">@Model.CustomerName</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">Status</label>
+                                <div>
+                                    <span class="badge @statusClass">@Model.Status</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <label class="text-muted small">Shipping Address</label>
+                                <div>@Model.ShippingAddress</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Shipping Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="trackingNumber" class="form-label">Tracking Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="trackingNumber" name="trackingNumber" required placeholder="Enter tracking number" />
+                                <div class="form-text">Enter the carrier's tracking number for this shipment.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="shippedDate" class="form-label">Shipped Date <span class="text-danger">*</span></label>
+                                <input type="datetime-local" class="form-control" id="shippedDate" name="shippedDate" required />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Shipping Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Enter any notes about the shipment..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Items to Ship</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            Review the items below before shipping. All items should be picked and ready for shipment.
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>SKU</th>
+                                        <th>Location</th>
+                                        <th class="text-center">Ordered</th>
+                                        <th class="text-center">Picked</th>
+                                        <th class="text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.Items)
+                                    {
+                                        var isPicked = item.PickedQuantity >= item.OrderedQuantity;
+                                        var rowClass = isPicked ? "table-success" : "table-warning";
+                                        
+                                        <tr class="@rowClass">
+                                            <td>
+                                                <div class="fw-bold">@item.ProductName</div>
+                                            </td>
+                                            <td>
+                                                <code>@item.ProductSku</code>
+                                            </td>
+                                            <td>@item.LocationName</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-secondary">@item.OrderedQuantity</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge @(isPicked ? "bg-success" : "bg-warning")">@item.PickedQuantity</span>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (isPicked)
+                                                {
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check-circle"></i> Ready
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning">
+                                                        <i class="bi bi-exclamation-triangle"></i> Partial
+                                                    </span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @{
+                            var totalOrdered = Model.Items.Sum(i => i.OrderedQuantity);
+                            var totalPicked = Model.Items.Sum(i => i.PickedQuantity);
+                            var allPicked = totalPicked >= totalOrdered;
+                        }
+
+                        @if (!allPicked)
+                        {
+                            <div class="alert alert-warning mt-3">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Warning:</strong> Not all items have been fully picked. 
+                                You can still proceed with shipping, but the order will be partially fulfilled.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card mb-4 sticky-top" style="top: 20px;">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">Shipping Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Total Items:</span>
+                            <span class="fw-bold">@Model.Items.Count</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Ordered Quantity:</span>
+                            <span class="fw-bold">@totalOrdered</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Picked Quantity:</span>
+                            <span class="fw-bold text-success">@totalPicked</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="fw-bold">Fulfillment Rate:</span>
+                            <span class="fw-bold text-primary">
+                                @{
+                                    var fulfillmentRate = totalOrdered > 0 ? (int)((totalPicked / (decimal)totalOrdered) * 100) : 0;
+                                }
+                                @fulfillmentRate%
+                            </span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-truck"></i> Confirm Shipment
+                            </button>
+                            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        // Set default shipped date to current datetime
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const offset = now.getTimezoneOffset() * 60000;
+            const localISOTime = new Date(now - offset).toISOString().slice(0, 16);
+            document.getElementById('shippedDate').value = localISOTime;
+        });
+
+        // Form validation
+        document.getElementById('shipForm').addEventListener('submit', function(e) {
+            const trackingNumber = document.getElementById('trackingNumber').value.trim();
+            const shippedDate = document.getElementById('shippedDate').value;
+            
+            if (!trackingNumber) {
+                e.preventDefault();
+                alert('Please enter a tracking number.');
+                return false;
+            }
+            
+            if (!shippedDate) {
+                e.preventDefault();
+                alert('Please select a shipped date.');
+                return false;
+            }
+
+            @{
+                var totalOrdered2 = Model.Items.Sum(i => i.OrderedQuantity);
+                var totalPicked2 = Model.Items.Sum(i => i.PickedQuantity);
+                var allPicked2 = totalPicked2 >= totalOrdered2;
+            }
+            @if (!allPicked2)
+            {
+                <text>
+                if (!confirm('Not all items have been fully picked. Do you want to proceed with partial shipment?')) {
+                    e.preventDefault();
+                    return false;
+                }
+                </text>
+            }
+        });
+    </script>
+}

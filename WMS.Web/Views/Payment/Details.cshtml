@@ -1,0 +1,263 @@
+@model WMS.Web.Models.PaymentViewModel
+@{
+    ViewData["Title"] = "Payment Details";
+    var statusClass = Model.Status switch
+    {
+        "Pending" => "bg-warning text-dark",
+        "Processing" => "bg-info",
+        "Completed" => "bg-success",
+        "Failed" => "bg-danger",
+        "Refunded" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Payment Details</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                    <li class="breadcrumb-item"><a asp-controller="Payment" asp-action="Index">Payments</a></li>
+                    <li class="breadcrumb-item active">@Model.PaymentNumber</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+            @if (Model.Status == "Pending")
+            {
+                <button type="button" class="btn btn-success" onclick="confirmPayment('@Model.Id')">
+                    <i class="bi bi-check-circle"></i> Confirm Payment
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Payment Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Payment Number</label>
+                            <div class="fw-bold fs-5">@Model.PaymentNumber</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Status</label>
+                            <div>
+                                <span class="badge @statusClass fs-6">@Model.Status</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Payment Type</label>
+                            <div>
+                                <span class="badge @(Model.Type == "Inbound" ? "bg-success" : "bg-primary") fs-6">
+                                    <i class="bi @(Model.Type == "Inbound" ? "bi-arrow-down" : "bi-arrow-up")"></i>
+                                    @Model.Type
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Payment Method</label>
+                            <div class="fw-bold">
+                                @if (Model.PaymentMethod == "Cash")
+                                {
+                                    <i class="bi bi-cash text-success"></i>
+                                }
+                                else if (Model.PaymentMethod == "Credit Card")
+                                {
+                                    <i class="bi bi-credit-card text-primary"></i>
+                                }
+                                else if (Model.PaymentMethod == "Bank Transfer")
+                                {
+                                    <i class="bi bi-bank text-info"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-wallet2 text-secondary"></i>
+                                }
+                                @Model.PaymentMethod
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small">Amount</label>
+                            <div class="fw-bold fs-4 @(Model.Type == "Inbound" ? "text-success" : "text-primary")">
+                                @Model.Currency @Model.Amount.ToString("N2")
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small">Payment Date</label>
+                            <div>@Model.PaymentDate.ToString("MMMM dd, yyyy")</div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.TransactionId))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="text-muted small">Transaction ID</label>
+                                <div class="d-flex align-items-center">
+                                    <code class="fs-6">@Model.TransactionId</code>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="copyToClipboard('@Model.TransactionId')">
+                                        <i class="bi bi-clipboard"></i> Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ReferenceType) && !string.IsNullOrEmpty(Model.ReferenceId))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="text-muted small">Reference Type</label>
+                                <div>@Model.ReferenceType</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Reference ID</label>
+                                <div><code>@Model.ReferenceId</code></div>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <div class="row">
+                            <div class="col-12">
+                                <label class="text-muted small">Notes</label>
+                                <div class="border rounded p-3 bg-light">@Model.Notes</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (Model.Status == "Failed" || Model.Status == "Refunded")
+            {
+                <div class="card">
+                    <div class="card-header bg-@(Model.Status == "Failed" ? "danger" : "warning") text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            @(Model.Status == "Failed" ? "Payment Failed" : "Payment Refunded")
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">
+                            @if (Model.Status == "Failed")
+                            {
+                                <text>This payment transaction has failed. Please verify the payment details and try again.</text>
+                            }
+                            else
+                            {
+                                <text>This payment has been refunded. The amount has been returned to the original payment method.</text>
+                            }
+                        </p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Payment Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Payment Type:</span>
+                        <span class="fw-bold">@Model.Type</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Payment Method:</span>
+                        <span class="fw-bold">@Model.PaymentMethod</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Currency:</span>
+                        <span class="fw-bold">@Model.Currency</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="fw-bold fs-5">Total Amount:</span>
+                        <span class="fw-bold fs-5 text-primary">@Model.Currency @Model.Amount.ToString("N2")</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Status:</span>
+                        <span class="badge @statusClass">@Model.Status</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Audit Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="text-muted small">Created By</label>
+                        <div>@Model.CreatedBy</div>
+                        <small class="text-muted">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                    </div>
+                    @if (Model.UpdatedAt.HasValue)
+                    {
+                        <div>
+                            <label class="text-muted small">Last Updated By</label>
+                            <div>@Model.UpdatedBy</div>
+                            <small class="text-muted">@Model.UpdatedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmPayment(id) {
+            if (confirm('Are you sure you want to confirm this payment?')) {
+                fetch('@Url.Action("Confirm", "Payment")/' + id, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to confirm payment. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    alert('An error occurred. Please try again.');
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Transaction ID copied to clipboard!');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+    </script>
+}
