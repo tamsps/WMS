@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  wms-auth-api:
+    build:
+      context: .
+      dockerfile: WMS.Auth.API/Dockerfile
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=WMSDB;User=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+    depends_on:
+      - sqlserver
+    networks:
+      - wms-network
+
+  wms-products-api:
+    build:
+      context: .
+      dockerfile: WMS.Products.API/Dockerfile
+    ports:
+      - "5002:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=WMSDB;User=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+    depends_on:
+      - sqlserver
+    networks:
+      - wms-network
+
+  wms-locations-api:
+    build:
+      context: .
+      dockerfile: WMS.Locations.API/Dockerfile
+    ports:
+      - "5003:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=WMSDB;User=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+    depends_on:
+      - sqlserver
+    networks:
+      - wms-network
+
+  wms-inventory-api:
+    build:
+      context: .
+      dockerfile: WMS.Inventory.API/Dockerfile
+    ports:
+      - "5004:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=WMSDB;User=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+    depends_on:
+      - sqlserver
+    networks:
+      - wms-network
+
+  wms-inbound-api:
+    build:
+      context: .
+      dockerfile: WMS.Inbound.API/Dockerfile
+    ports:
+      - "5005:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=WMSDB;User=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+    depends_on:
+      - sqlserver
+    networks:
+      - wms-network
+
+  wms-outbound-api:
+    build:
+      context: .
+      dockerfile: WMS.Outbound.API/Dockerfile
+    ports:
+      - "5006:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=WMSDB;User=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+    depends_on:
+      - sqlserver
+    networks:
+      - wms-network
+
+  wms-payment-api:
+    build:
+      context: .
+      dockerfile: WMS.Payment.API/Dockerfile
+    ports:
+      - "5007:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=WMSDB;User=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+    depends_on:
+      - sqlserver
+    networks:
+      - wms-network
+
+  wms-delivery-api:
+    build:
+      context: .
+      dockerfile: WMS.Delivery.API/Dockerfile
+    ports:
+      - "5008:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=WMSDB;User=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+    depends_on:
+      - sqlserver
+    networks:
+      - wms-network
+
+  wms-web:
+    build:
+      context: .
+      dockerfile: WMS.Web/Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ApiSettings__BaseUrl=http://wms-auth-api:8080
+    depends_on:
+      - wms-auth-api
+      - wms-products-api
+      - wms-locations-api
+      - wms-inventory-api
+      - wms-inbound-api
+      - wms-outbound-api
+      - wms-payment-api
+      - wms-delivery-api
+    networks:
+      - wms-network
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - wms-network
+
+networks:
+  wms-network:
+    driver: bridge
+
+volumes:
+  sqlserver-data:
