@@ -1,7 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WMS.Application.DTOs.Product;
-using WMS.Application.Interfaces;
+using MediatR;
+using WMS.Products.API.Application.Commands.CreateProduct;
+using WMS.Products.API.Application.Commands.UpdateProduct;
+using WMS.Products.API.Application.Commands.ActivateProduct;
+using WMS.Products.API.Application.Commands.DeactivateProduct;
+using WMS.Products.API.Application.Queries.GetProductById;
+using WMS.Products.API.Application.Queries.GetAllProducts;
+using WMS.Products.API.Application.Queries.GetProductBySku;
+using WMS.Products.API.DTOs.Product;
 
 namespace WMS.Products.API.Controllers;
 
@@ -10,11 +17,11 @@ namespace WMS.Products.API.Controllers;
 [Route("api/[controller]")]
 public class ProductsController : ControllerBase
 {
-    private readonly IProductService _productService;
+    private readonly IMediator _mediator;
 
-    public ProductsController(IProductService productService)
+    public ProductsController(IMediator mediator)
     {
-        _productService = productService;
+        _mediator = mediator;
     }
 
     /// <summary>
@@ -23,7 +30,15 @@ public class ProductsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
     {
-        var result = await _productService.GetAllAsync(pageNumber, pageSize, searchTerm);
+        var query = new GetAllProductsQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            SearchTerm = searchTerm
+        };
+
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -37,7 +52,9 @@ public class ProductsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _productService.GetByIdAsync(id);
+        var query = new GetProductByIdQuery { Id = id };
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return NotFound(result);
@@ -51,7 +68,9 @@ public class ProductsController : ControllerBase
     [HttpGet("sku/{sku}")]
     public async Task<IActionResult> GetBySKU(string sku)
     {
-        var result = await _productService.GetBySKUAsync(sku);
+        var query = new GetProductBySkuQuery { SKU = sku };
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return NotFound(result);
@@ -67,7 +86,15 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
     {
         var currentUser = User.Identity?.Name ?? "System";
-        var result = await _productService.CreateAsync(dto, currentUser);
+
+        var command = new CreateProductCommand
+        {
+            Dto = dto,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -88,7 +115,15 @@ public class ProductsController : ControllerBase
         }
 
         var currentUser = User.Identity?.Name ?? "System";
-        var result = await _productService.UpdateAsync(dto, currentUser);
+
+        var command = new UpdateProductCommand
+        {
+            Dto = dto,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -104,7 +139,15 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> Activate(Guid id)
     {
         var currentUser = User.Identity?.Name ?? "System";
-        var result = await _productService.ActivateAsync(id, currentUser);
+
+        var command = new ActivateProductCommand
+        {
+            Id = id,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -120,7 +163,15 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> Deactivate(Guid id)
     {
         var currentUser = User.Identity?.Name ?? "System";
-        var result = await _productService.DeactivateAsync(id, currentUser);
+
+        var command = new DeactivateProductCommand
+        {
+            Id = id,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);

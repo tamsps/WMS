@@ -1,6 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WMS.Application.Interfaces;
+using MediatR;
+using WMS.Inventory.API.Application.Queries.GetInventoryById;
+using WMS.Inventory.API.Application.Queries.GetAllInventory;
+using WMS.Inventory.API.Application.Queries.GetInventoryByProduct;
+using WMS.Inventory.API.Application.Queries.GetInventoryByLocation;
+using WMS.Inventory.API.Application.Queries.GetInventoryTransactions;
 
 namespace WMS.Inventory.API.Controllers;
 
@@ -9,11 +14,11 @@ namespace WMS.Inventory.API.Controllers;
 [Route("api/[controller]")]
 public class InventoryController : ControllerBase
 {
-    private readonly IInventoryService _inventoryService;
+    private readonly IMediator _mediator;
 
-    public InventoryController(IInventoryService inventoryService)
+    public InventoryController(IMediator mediator)
     {
-        _inventoryService = inventoryService;
+        _mediator = mediator;
     }
 
     /// <summary>
@@ -23,7 +28,14 @@ public class InventoryController : ControllerBase
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
     public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
     {
-        var result = await _inventoryService.GetAllAsync(pageNumber, pageSize);
+        var query = new GetAllInventoryQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -38,7 +50,9 @@ public class InventoryController : ControllerBase
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _inventoryService.GetByIdAsync(id);
+        var query = new GetInventoryByIdQuery { Id = id };
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return NotFound(result);
@@ -53,7 +67,9 @@ public class InventoryController : ControllerBase
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
     public async Task<IActionResult> GetByProduct(Guid productId)
     {
-        var result = await _inventoryService.GetInventoryByProductAsync(productId);
+        var query = new GetInventoryByProductQuery { ProductId = productId };
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return NotFound(result);
@@ -62,19 +78,24 @@ public class InventoryController : ControllerBase
     }
 
     /// <summary>
-    /// Get inventory levels across all locations with pagination and search
+    /// Get inventory by location ID
     /// </summary>
-    [HttpGet("levels")]
+    [HttpGet("location/{locationId}")]
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> GetLevels(
-        [FromQuery] int pageNumber = 1, 
-        [FromQuery] int pageSize = 20, 
-        [FromQuery] string? searchTerm = null)
+    public async Task<IActionResult> GetByLocation(Guid locationId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
     {
-        var result = await _inventoryService.GetInventoryLevelsAsync(pageNumber, pageSize, searchTerm);
+        var query = new GetInventoryByLocationQuery
+        {
+            LocationId = locationId,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
-            return BadRequest(result);
+            return NotFound(result);
         }
         return Ok(result);
     }
@@ -90,32 +111,19 @@ public class InventoryController : ControllerBase
         [FromQuery] Guid? productId = null,
         [FromQuery] Guid? locationId = null)
     {
-        var result = await _inventoryService.GetTransactionsAsync(pageNumber, pageSize, productId, locationId);
+        var query = new GetInventoryTransactionsQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            ProductId = productId,
+            LocationId = locationId
+        };
+
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
-        }
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Get available quantity for a product at a specific location
-    /// </summary>
-    [HttpGet("availability")]
-    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> GetAvailableQuantity(
-        [FromQuery] Guid productId,
-        [FromQuery] Guid locationId)
-    {
-        if (productId == Guid.Empty || locationId == Guid.Empty)
-        {
-            return BadRequest(new { IsSuccess = false, Errors = new[] { "ProductId and LocationId are required" } });
-        }
-
-        var result = await _inventoryService.GetAvailableQuantityAsync(productId, locationId);
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
         }
         return Ok(result);
     }

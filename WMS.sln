@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WMS.Payment.API", "WMS.Paym
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WMS.Delivery.API", "WMS.Delivery.API\WMS.Delivery.API.csproj", "{3744047B-9DE8-4787-A426-31A8DD938DC3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WMS.Gateway", "WMS.Gateway\WMS.Gateway.csproj", "{90DF083A-2102-47A9-BBBF-709CCF0EC779}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -195,6 +197,18 @@ Global
 		{3744047B-9DE8-4787-A426-31A8DD938DC3}.Release|x64.Build.0 = Release|Any CPU
 		{3744047B-9DE8-4787-A426-31A8DD938DC3}.Release|x86.ActiveCfg = Release|Any CPU
 		{3744047B-9DE8-4787-A426-31A8DD938DC3}.Release|x86.Build.0 = Release|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Debug|x64.Build.0 = Debug|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Debug|x86.Build.0 = Debug|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Release|x64.ActiveCfg = Release|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Release|x64.Build.0 = Release|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Release|x86.ActiveCfg = Release|Any CPU
+		{90DF083A-2102-47A9-BBBF-709CCF0EC779}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

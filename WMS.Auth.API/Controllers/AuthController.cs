@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WMS.Application.DTOs.Auth;
-using WMS.Application.Interfaces;
-using System.Security.Claims;
+using MediatR;
+using WMS.Auth.API.Application.Commands.Login;
+using WMS.Auth.API.Application.Commands.Register;
+using WMS.Auth.API.Application.Commands.RefreshToken;
+using WMS.Auth.API.Application.Queries.GetUserById;
+using WMS.Auth.API.DTOs.Auth;
 
 namespace WMS.Auth.API.Controllers;
 
@@ -10,186 +13,107 @@ namespace WMS.Auth.API.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _authService;
-    private readonly ILogger<AuthController> _logger;
+    private readonly IMediator _mediator;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(IMediator mediator)
     {
-        _authService = authService;
-        _logger = logger;
+        _mediator = mediator;
     }
 
     /// <summary>
-    /// User login - returns JWT access token and refresh token
+    /// User login
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        var command = new LoginCommand { Dto = dto };
+        var result = await _mediator.Send(command);
 
-        _logger.LogInformation("Login attempt for user: {Username}", dto.Username);
-        var result = await _authService.LoginAsync(dto);
-        
         if (!result.IsSuccess)
         {
-            _logger.LogWarning("Login failed for user: {Username}", dto.Username);
             return Unauthorized(result);
         }
-        
-        _logger.LogInformation("Login successful for user: {Username}", dto.Username);
+
         return Ok(result);
     }
 
     /// <summary>
-    /// User registration - creates new user account
+    /// User registration
     /// </summary>
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        var command = new RegisterCommand { Dto = dto };
+        var result = await _mediator.Send(command);
 
-        _logger.LogInformation("Registration attempt for user: {Username}", dto.Username);
-        var result = await _authService.RegisterAsync(dto);
-        
         if (!result.IsSuccess)
         {
-            _logger.LogWarning("Registration failed for user: {Username}", dto.Username);
             return BadRequest(result);
         }
-        
-        _logger.LogInformation("Registration successful for user: {Username}", dto.Username);
-        return CreatedAtAction(nameof(GetProfile), null, result);
-    }
 
-    /// <summary>
-    /// Refresh access token using refresh token
-    /// </summary>
-    [HttpPost("refresh-token")]
-    [AllowAnonymous]
-    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto dto)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        var result = await _authService.RefreshTokenAsync(dto);
-        
-        if (!result.IsSuccess)
-        {
-            return Unauthorized(result);
-        }
-        
         return Ok(result);
     }
 
     /// <summary>
-    /// User logout - invalidates refresh token
+    /// Refresh access token
     /// </summary>
-    [HttpPost("logout")]
-    [Authorize]
-    public async Task<IActionResult> Logout()
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto dto)
     {
-        var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        
-        if (string.IsNullOrEmpty(username))
-        {
-            return BadRequest(new { IsSuccess = false, Errors = new[] { "Invalid token" } });
-        }
+        var command = new RefreshTokenCommand { Dto = dto };
+        var result = await _mediator.Send(command);
 
-        var result = await _authService.LogoutAsync(username);
-        
         if (!result.IsSuccess)
         {
             return BadRequest(result);
         }
-        
-        _logger.LogInformation("User logged out: {Username}", username);
+
         return Ok(result);
     }
 
     /// <summary>
     /// Get current user profile
     /// </summary>
-    [HttpGet("profile")]
+    [HttpGet("me")]
     [Authorize]
-    public IActionResult GetProfile()
+    public async Task<IActionResult> GetCurrentUser()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var username = User.FindFirst(ClaimTypes.Name)?.Value;
-        var email = User.FindFirst(ClaimTypes.Email)?.Value;
-        var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-
-        var profile = new
+        var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("userId");
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
         {
-            UserId = userId,
-            Username = username,
-            Email = email,
-            Roles = roles
-        };
+            return Unauthorized(new { IsSuccess = false, Errors = new[] { "Invalid token" } });
+        }
 
-        return Ok(new { IsSuccess = true, Data = profile });
+        var query = new GetUserByIdQuery { Id = userId };
+        var result = await _mediator.Send(query);
+
+        if (!result.IsSuccess)
+        {
+            return NotFound(result);
+        }
+
+        return Ok(result);
     }
 
     /// <summary>
-    /// Validate token (check if current token is still valid)
+    /// Validate token
     /// </summary>
     [HttpGet("validate")]
     [Authorize]
     public IActionResult ValidateToken()
     {
-        // If we reach here, the token is valid (passed [Authorize] filter)
-        return Ok(new 
-        { 
-            IsSuccess = true, 
-            Data = new 
-            { 
-                IsValid = true,
-                Username = User.FindFirst(ClaimTypes.Name)?.Value,
-                ExpiresAt = User.FindFirst("exp")?.Value
-            }
-        });
-    }
-
-    /// <summary>
-    /// Get authentication statistics (Admin only)
-    /// </summary>
-    [HttpGet("statistics")]
-    [Authorize(Roles = "Admin")]
-    public IActionResult GetStatistics()
-    {
-        // In a real implementation, you would query the database for these stats
-        var stats = new
+        return Ok(new
         {
-            TotalUsers = 0,
-            ActiveSessions = 0,
-            TodayLogins = 0,
-            FailedLoginAttempts = 0
-        };
-
-        return Ok(new { IsSuccess = true, Data = stats });
-    }
-
-    /// <summary>
-    /// Health check endpoint
-    /// </summary>
-    [HttpGet("health")]
-    [AllowAnonymous]
-    public IActionResult Health()
-    {
-        return Ok(new 
-        { 
-            Service = "WMS.Auth.API",
-            Status = "Healthy",
-            Timestamp = DateTime.UtcNow
+            IsSuccess = true,
+            Data = new
+            {
+                IsValid = true,
+                Username = User.Identity?.Name,
+                UserId = User.FindFirst("sub")?.Value ?? User.FindFirst("userId")?.Value
+            }
         });
     }
 }

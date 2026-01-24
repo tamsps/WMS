@@ -1,8 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WMS.Application.DTOs.Outbound;
-using WMS.Application.Interfaces;
-using System.Security.Claims;
+using MediatR;
+using WMS.Outbound.API.Application.Commands.CreateOutbound;
+using WMS.Outbound.API.Application.Commands.PickOutbound;
+using WMS.Outbound.API.Application.Commands.ShipOutbound;
+using WMS.Outbound.API.Application.Commands.CancelOutbound;
+using WMS.Outbound.API.Application.Queries.GetOutboundById;
+using WMS.Outbound.API.Application.Queries.GetAllOutbounds;
+using WMS.Outbound.API.DTOs.Outbound;
 
 namespace WMS.Outbound.API.Controllers;
 
@@ -11,24 +16,29 @@ namespace WMS.Outbound.API.Controllers;
 [Route("api/[controller]")]
 public class OutboundController : ControllerBase
 {
-    private readonly IOutboundService _outboundService;
+    private readonly IMediator _mediator;
 
-    public OutboundController(IOutboundService outboundService)
+    public OutboundController(IMediator mediator)
     {
-        _outboundService = outboundService;
+        _mediator = mediator;
     }
 
     /// <summary>
-    /// Get all outbound orders with pagination and optional status filter
+    /// Get all outbound shipments with pagination
     /// </summary>
     [HttpGet]
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> GetAll(
-        [FromQuery] int pageNumber = 1, 
-        [FromQuery] int pageSize = 20,
-        [FromQuery] string? status = null)
+    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, [FromQuery] string? status = null)
     {
-        var result = await _outboundService.GetAllAsync(pageNumber, pageSize, status);
+        var query = new GetAllOutboundsQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            Status = status
+        };
+
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -37,13 +47,15 @@ public class OutboundController : ControllerBase
     }
 
     /// <summary>
-    /// Get outbound order by ID
+    /// Get outbound shipment by ID
     /// </summary>
     [HttpGet("{id}")]
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _outboundService.GetByIdAsync(id);
+        var query = new GetOutboundByIdQuery { Id = id };
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return NotFound(result);
@@ -52,130 +64,99 @@ public class OutboundController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new outbound order
+    /// Create a new outbound shipment
     /// </summary>
     [HttpPost]
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
     public async Task<IActionResult> Create([FromBody] CreateOutboundDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        var currentUser = User.Identity?.Name ?? "System";
 
-        var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _outboundService.CreateAsync(dto, currentUser);
-        
+        var command = new CreateOutboundCommand
+        {
+            Dto = dto,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
         }
-        
         return CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result);
     }
 
     /// <summary>
-    /// Pick items for outbound order
+    /// Pick outbound items (reserves inventory)
     /// </summary>
-    [HttpPost("{id}/pick")]
+    [HttpPost("pick")]
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> Pick(Guid id, [FromBody] PickOutboundDto dto)
+    public async Task<IActionResult> Pick([FromBody] PickOutboundDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        var currentUser = User.Identity?.Name ?? "System";
 
-        if (id != dto.OutboundId)
+        var command = new PickOutboundCommand
         {
-            return BadRequest(new { IsSuccess = false, Errors = new[] { "ID mismatch" } });
-        }
+            Dto = dto,
+            CurrentUser = currentUser
+        };
 
-        var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _outboundService.PickAsync(dto, currentUser);
-        
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
         }
-        
         return Ok(result);
     }
 
     /// <summary>
-    /// Ship outbound order (deducts inventory)
+    /// Ship outbound (deducts inventory)
     /// </summary>
-    [HttpPost("{id}/ship")]
-    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> Ship(Guid id, [FromBody] ShipOutboundDto dto)
+    [HttpPost("ship")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> Ship([FromBody] ShipOutboundDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        var currentUser = User.Identity?.Name ?? "System";
 
-        if (id != dto.OutboundId)
+        var command = new ShipOutboundCommand
         {
-            return BadRequest(new { IsSuccess = false, Errors = new[] { "ID mismatch" } });
-        }
+            Dto = dto,
+            CurrentUser = currentUser
+        };
 
-        var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _outboundService.ShipAsync(dto, currentUser);
-        
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
         }
-        
         return Ok(result);
     }
 
     /// <summary>
-    /// Cancel an outbound order
+    /// Cancel outbound shipment
     /// </summary>
     [HttpPost("{id}/cancel")]
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Cancel(Guid id)
     {
-        var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _outboundService.CancelAsync(id, currentUser);
-        
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        
-        return Ok(result);
-    }
+        var currentUser = User.Identity?.Name ?? "System";
 
-    /// <summary>
-    /// Get outbound statistics (summary)
-    /// </summary>
-    [HttpGet("statistics")]
-    [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> GetStatistics([FromQuery] string? status = null)
-    {
-        // Get all outbounds with the status filter
-        var result = await _outboundService.GetAllAsync(1, int.MaxValue, status);
-        
-        if (!result.IsSuccess)
+        var command = new CancelOutboundCommand
         {
-            return BadRequest(result);
-        }
-
-        var stats = new
-        {
-            TotalCount = result.Data!.TotalCount,
-            PendingCount = result.Data.Items.Count(i => i.Status == "Pending"),
-            PickedCount = result.Data.Items.Count(i => i.Status == "Picked"),
-            PackedCount = result.Data.Items.Count(i => i.Status == "Packed"),
-            ShippedCount = result.Data.Items.Count(i => i.Status == "Shipped"),
-            CancelledCount = result.Data.Items.Count(i => i.Status == "Cancelled"),
-            TotalItems = result.Data.Items.Sum(i => i.Items.Sum(item => item.OrderedQuantity)),
-            TotalShippedItems = result.Data.Items.Sum(i => i.Items.Sum(item => item.ShippedQuantity))
+            OutboundId = id,
+            CurrentUser = currentUser
         };
 
-        return Ok(new { IsSuccess = true, Data = stats });
+        var result = await _mediator.Send(command);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(result);
+        }
+        return Ok(result);
     }
 }
 

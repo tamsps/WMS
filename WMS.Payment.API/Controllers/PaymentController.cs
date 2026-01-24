@@ -1,8 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WMS.Application.DTOs.Payment;
-using WMS.Application.Interfaces;
-using System.Security.Claims;
+using MediatR;
+using WMS.Payment.API.Application.Commands.CreatePayment;
+using WMS.Payment.API.Application.Commands.ConfirmPayment;
+using WMS.Payment.API.Application.Commands.CancelPayment;
+using WMS.Payment.API.Application.Queries.GetPaymentById;
+using WMS.Payment.API.Application.Queries.GetAllPayments;
+using WMS.Payment.API.DTOs.Payment;
 
 namespace WMS.Payment.API.Controllers;
 
@@ -11,24 +15,29 @@ namespace WMS.Payment.API.Controllers;
 [Route("api/[controller]")]
 public class PaymentController : ControllerBase
 {
-    private readonly IPaymentService _paymentService;
+    private readonly IMediator _mediator;
 
-    public PaymentController(IPaymentService paymentService)
+    public PaymentController(IMediator mediator)
     {
-        _paymentService = paymentService;
+        _mediator = mediator;
     }
 
     /// <summary>
-    /// Get all payments with pagination and optional status filter
+    /// Get all payments with pagination
     /// </summary>
     [HttpGet]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> GetAll(
-        [FromQuery] int pageNumber = 1, 
-        [FromQuery] int pageSize = 20,
-        [FromQuery] string? status = null)
+    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20, [FromQuery] string? status = null)
     {
-        var result = await _paymentService.GetAllAsync(pageNumber, pageSize, status);
+        var query = new GetAllPaymentsQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            Status = status
+        };
+
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -40,10 +49,12 @@ public class PaymentController : ControllerBase
     /// Get payment by ID
     /// </summary>
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _paymentService.GetByIdAsync(id);
+        var query = new GetPaymentByIdQuery { Id = id };
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return NotFound(result);
@@ -58,144 +69,69 @@ public class PaymentController : ControllerBase
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Create([FromBody] CreatePaymentDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        var currentUser = User.Identity?.Name ?? "System";
 
-        var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _paymentService.CreateAsync(dto, currentUser);
-        
+        var command = new CreatePaymentCommand
+        {
+            Dto = dto,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
         }
-        
         return CreatedAtAction(nameof(GetById), new { id = result.Data!.Id }, result);
-    }
-
-    /// <summary>
-    /// Initiate payment with gateway
-    /// </summary>
-    [HttpPost("{id}/initiate")]
-    [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> Initiate(Guid id, [FromBody] InitiatePaymentDto dto)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        if (id != dto.PaymentId)
-        {
-            return BadRequest(new { IsSuccess = false, Errors = new[] { "ID mismatch" } });
-        }
-
-        var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _paymentService.InitiateAsync(dto, currentUser);
-        
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        
-        return Ok(result);
     }
 
     /// <summary>
     /// Confirm payment
     /// </summary>
-    [HttpPost("{id}/confirm")]
+    [HttpPost("confirm")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> Confirm(Guid id, [FromBody] ConfirmPaymentDto dto)
+    public async Task<IActionResult> Confirm([FromBody] ConfirmPaymentDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        var currentUser = User.Identity?.Name ?? "System";
 
-        if (id != dto.PaymentId)
+        var command = new ConfirmPaymentCommand
         {
-            return BadRequest(new { IsSuccess = false, Errors = new[] { "ID mismatch" } });
-        }
-
-        var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _paymentService.ConfirmAsync(dto, currentUser);
-        
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Process payment webhook from external gateway
-    /// </summary>
-    [HttpPost("webhook")]
-    [AllowAnonymous] // Webhooks come from external systems
-    public async Task<IActionResult> ProcessWebhook([FromBody] PaymentWebhookDto dto)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        // In production, you should validate webhook signature/token here
-        var result = await _paymentService.ProcessWebhookAsync(dto);
-        
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Check if an outbound can be shipped based on payment status
-    /// </summary>
-    [HttpGet("can-ship/{outboundId}")]
-    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> CanShip(Guid outboundId)
-    {
-        var result = await _paymentService.CanShipAsync(outboundId);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Get payment statistics (summary)
-    /// </summary>
-    [HttpGet("statistics")]
-    [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> GetStatistics([FromQuery] string? status = null)
-    {
-        // Get all payments with the status filter
-        var result = await _paymentService.GetAllAsync(1, int.MaxValue, status);
-        
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-
-        var stats = new
-        {
-            TotalCount = result.Data!.TotalCount,
-            PendingCount = result.Data.Items.Count(p => p.Status == "Pending"),
-            ConfirmedCount = result.Data.Items.Count(p => p.Status == "Confirmed"),
-            FailedCount = result.Data.Items.Count(p => p.Status == "Failed"),
-            CancelledCount = result.Data.Items.Count(p => p.Status == "Cancelled"),
-            TotalAmount = result.Data.Items.Sum(p => p.Amount),
-            ConfirmedAmount = result.Data.Items.Where(p => p.Status == "Confirmed").Sum(p => p.Amount),
-            PendingAmount = result.Data.Items.Where(p => p.Status == "Pending").Sum(p => p.Amount)
+            Dto = dto,
+            CurrentUser = currentUser
         };
 
-        return Ok(new { IsSuccess = true, Data = stats });
+        var result = await _mediator.Send(command);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(result);
+        }
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Cancel payment
+    /// </summary>
+    [HttpPost("{id}/cancel")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> Cancel(Guid id)
+    {
+        var currentUser = User.Identity?.Name ?? "System";
+
+        var command = new CancelPaymentCommand
+        {
+            PaymentId = id,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(result);
+        }
+        return Ok(result);
     }
 }
 

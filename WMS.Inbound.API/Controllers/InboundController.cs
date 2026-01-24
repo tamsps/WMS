@@ -1,8 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WMS.Application.DTOs.Inbound;
-using WMS.Application.Interfaces;
+using MediatR;
 using System.Security.Claims;
+using WMS.Inbound.API.Application.Commands.CreateInbound;
+using WMS.Inbound.API.Application.Commands.ReceiveInbound;
+using WMS.Inbound.API.Application.Commands.CancelInbound;
+using WMS.Inbound.API.Application.Queries.GetInboundById;
+using WMS.Inbound.API.Application.Queries.GetAllInbounds;
+using WMS.Inbound.API.DTOs.Inbound;
 
 namespace WMS.Inbound.API.Controllers;
 
@@ -11,11 +16,11 @@ namespace WMS.Inbound.API.Controllers;
 [Route("api/[controller]")]
 public class InboundController : ControllerBase
 {
-    private readonly IInboundService _inboundService;
+    private readonly IMediator _mediator;
 
-    public InboundController(IInboundService inboundService)
+    public InboundController(IMediator mediator)
     {
-        _inboundService = inboundService;
+        _mediator = mediator;
     }
 
     /// <summary>
@@ -28,11 +33,20 @@ public class InboundController : ControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] string? status = null)
     {
-        var result = await _inboundService.GetAllAsync(pageNumber, pageSize, status);
+        var query = new GetAllInboundsQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            Status = status
+        };
+
+        var result = await _mediator.Send(query);
+        
         if (!result.IsSuccess)
         {
             return BadRequest(result);
         }
+        
         return Ok(result);
     }
 
@@ -43,11 +57,14 @@ public class InboundController : ControllerBase
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _inboundService.GetByIdAsync(id);
+        var query = new GetInboundByIdQuery { Id = id };
+        var result = await _mediator.Send(query);
+        
         if (!result.IsSuccess)
         {
             return NotFound(result);
         }
+        
         return Ok(result);
     }
 
@@ -64,7 +81,14 @@ public class InboundController : ControllerBase
         }
 
         var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _inboundService.CreateAsync(dto, currentUser);
+        
+        var command = new CreateInboundCommand 
+        { 
+            Dto = dto, 
+            CurrentUser = currentUser 
+        };
+        
+        var result = await _mediator.Send(command);
         
         if (!result.IsSuccess)
         {
@@ -92,7 +116,14 @@ public class InboundController : ControllerBase
         }
 
         var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _inboundService.ReceiveAsync(dto, currentUser);
+        
+        var command = new ReceiveInboundCommand 
+        { 
+            Dto = dto, 
+            CurrentUser = currentUser 
+        };
+        
+        var result = await _mediator.Send(command);
         
         if (!result.IsSuccess)
         {
@@ -110,7 +141,14 @@ public class InboundController : ControllerBase
     public async Task<IActionResult> Cancel(Guid id)
     {
         var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
-        var result = await _inboundService.CancelAsync(id, currentUser);
+        
+        var command = new CancelInboundCommand 
+        { 
+            Id = id, 
+            CurrentUser = currentUser 
+        };
+        
+        var result = await _mediator.Send(command);
         
         if (!result.IsSuccess)
         {
@@ -127,8 +165,15 @@ public class InboundController : ControllerBase
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> GetStatistics([FromQuery] string? status = null)
     {
-        // Get all inbounds with the status filter
-        var result = await _inboundService.GetAllAsync(1, int.MaxValue, status);
+        // Get all inbounds using CQRS query
+        var query = new GetAllInboundsQuery
+        {
+            PageNumber = 1,
+            PageSize = int.MaxValue,
+            Status = status
+        };
+        
+        var result = await _mediator.Send(query);
         
         if (!result.IsSuccess)
         {
@@ -139,8 +184,7 @@ public class InboundController : ControllerBase
         {
             TotalCount = result.Data!.TotalCount,
             PendingCount = result.Data.Items.Count(i => i.Status == "Pending"),
-            InProgressCount = result.Data.Items.Count(i => i.Status == "InProgress"),
-            CompletedCount = result.Data.Items.Count(i => i.Status == "Completed"),
+            ReceivedCount = result.Data.Items.Count(i => i.Status == "Received"),
             CancelledCount = result.Data.Items.Count(i => i.Status == "Cancelled")
         };
 

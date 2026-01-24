@@ -1,7 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using WMS.Application.DTOs.Location;
-using WMS.Application.Interfaces;
+using MediatR;
+using WMS.Locations.API.Application.Commands.CreateLocation;
+using WMS.Locations.API.Application.Commands.UpdateLocation;
+using WMS.Locations.API.Application.Commands.ActivateLocation;
+using WMS.Locations.API.Application.Commands.DeactivateLocation;
+using WMS.Locations.API.Application.Queries.GetLocationById;
+using WMS.Locations.API.Application.Queries.GetAllLocations;
+using WMS.Locations.API.Application.Queries.GetLocationByCode;
+using WMS.Locations.API.DTOs.Location;
 
 namespace WMS.Locations.API.Controllers;
 
@@ -10,20 +17,29 @@ namespace WMS.Locations.API.Controllers;
 [Route("api/[controller]")]
 public class LocationsController : ControllerBase
 {
-    private readonly ILocationService _locationService;
+    private readonly IMediator _mediator;
 
-    public LocationsController(ILocationService locationService)
+    public LocationsController(IMediator mediator)
     {
-        _locationService = locationService;
+        _mediator = mediator;
     }
 
     /// <summary>
     /// Get all locations with pagination
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? zone = null)
+    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null, [FromQuery] bool? isActive = null)
     {
-        var result = await _locationService.GetAllAsync(pageNumber, pageSize, zone);
+        var query = new GetAllLocationsQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            SearchTerm = searchTerm,
+            IsActive = isActive
+        };
+
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -37,7 +53,9 @@ public class LocationsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var result = await _locationService.GetByIdAsync(id);
+        var query = new GetLocationByIdQuery { Id = id };
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return NotFound(result);
@@ -51,7 +69,9 @@ public class LocationsController : ControllerBase
     [HttpGet("code/{code}")]
     public async Task<IActionResult> GetByCode(string code)
     {
-        var result = await _locationService.GetByCodeAsync(code);
+        var query = new GetLocationByCodeQuery { Code = code };
+        var result = await _mediator.Send(query);
+
         if (!result.IsSuccess)
         {
             return NotFound(result);
@@ -67,7 +87,15 @@ public class LocationsController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateLocationDto dto)
     {
         var currentUser = User.Identity?.Name ?? "System";
-        var result = await _locationService.CreateAsync(dto, currentUser);
+
+        var command = new CreateLocationCommand
+        {
+            Dto = dto,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -88,7 +116,39 @@ public class LocationsController : ControllerBase
         }
 
         var currentUser = User.Identity?.Name ?? "System";
-        var result = await _locationService.UpdateAsync(dto, currentUser);
+
+        var command = new UpdateLocationCommand
+        {
+            Dto = dto,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(result);
+        }
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Activate a location
+    /// </summary>
+    [HttpPatch("{id}/activate")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> Activate(Guid id)
+    {
+        var currentUser = User.Identity?.Name ?? "System";
+
+        var command = new ActivateLocationCommand
+        {
+            Id = id,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);
@@ -104,7 +164,15 @@ public class LocationsController : ControllerBase
     public async Task<IActionResult> Deactivate(Guid id)
     {
         var currentUser = User.Identity?.Name ?? "System";
-        var result = await _locationService.DeactivateAsync(id, currentUser);
+
+        var command = new DeactivateLocationCommand
+        {
+            Id = id,
+            CurrentUser = currentUser
+        };
+
+        var result = await _mediator.Send(command);
+
         if (!result.IsSuccess)
         {
             return BadRequest(result);

@@ -2,11 +2,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using WMS.Application.Interfaces;
 using WMS.Domain.Interfaces;
-using WMS.Infrastructure.Data;
-using WMS.Infrastructure.Repositories;
+using WMS.Domain.Data;
+using WMS.Domain.Repositories;
 using WMS.Infrastructure.Services;
+using MediatR;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +23,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<WMSDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
-        b => b.MigrationsAssembly("WMS.Infrastructure")));
+        b => b.MigrationsAssembly("WMS.Domain")));
 
 // JWT Authentication Configuration
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -62,13 +63,20 @@ builder.Services.AddCors(options =>
     });
 });
 
+// MediatR - Register all handlers from current assembly
+builder.Services.AddMediatR(cfg => 
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+
+// FluentValidation - Register all validators from current assembly
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+
 // Dependency Injection - Repositories
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Dependency Injection - Services
-builder.Services.AddScoped<IOutboundService, OutboundService>();
-builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<WMS.Application.Interfaces.IOutboundService, OutboundService>();
+builder.Services.AddScoped<WMS.Application.Interfaces.IInventoryService, InventoryService>();
 
 var app = builder.Build();
 
