@@ -7,7 +7,7 @@ using WMS.Domain.Data;
 using WMS.Domain.Repositories;
 using MediatR;
 using FluentValidation;
-using WMS.Infrastructure.Services;
+//using WMS.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,7 +75,7 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Dependency Injection - Services
-builder.Services.AddScoped<WMS.Application.Interfaces.IPaymentService, PaymentService>();
+//builder.Services.AddScoped<WMS.Application.Interfaces.IPaymentService, PaymentService>();
 
 var app = builder.Build();
 

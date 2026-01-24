@@ -5,9 +5,9 @@ using System.Text;
 using System.Reflection;
 using WMS.Application.Interfaces;
 using WMS.Domain.Interfaces;
-using WMS.Infrastructure.Data;
-using WMS.Infrastructure.Repositories;
-using WMS.Infrastructure.Services;
+//using WMS.Infrastructure.Data;
+//using WMS.Infrastructure.Repositories;
+//using WMS.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

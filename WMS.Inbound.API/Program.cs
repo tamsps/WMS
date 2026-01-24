@@ -5,7 +5,7 @@ using System.Text;
 using WMS.Domain.Interfaces;
 using WMS.Domain.Data;
 using WMS.Domain.Repositories;
-using WMS.Infrastructure.Services;
+//using WMS.Infrastructure.Services;
 using MediatR;
 using FluentValidation;
 
@@ -75,8 +75,8 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Dependency Injection - Services
-builder.Services.AddScoped<WMS.Application.Interfaces.IInboundService, InboundService>();
-builder.Services.AddScoped<WMS.Application.Interfaces.IInventoryService, InventoryService>();
+//builder.Services.AddScoped<WMS.Application.Interfaces.IInboundService, InboundService>();
+//builder.Services.AddScoped<WMS.Application.Interfaces.IInventoryService, InventoryService>();
 
 var app = builder.Build();
 

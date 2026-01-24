@@ -1,0 +1,527 @@
+{
+  "info": {
+    "name": "WMS API Gateway Collection",
+    "description": "Complete API collection for WMS Gateway (https://localhost:7000)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "https://localhost:7000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/auth/login",
+              "host": ["{{gateway_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"user@example.com\",\n  \"password\": \"Password@123\",\n  \"confirmPassword\": \"Password@123\",\n  \"fullName\": \"New User\",\n  \"role\": \"WarehouseStaff\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/auth/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/auth/me",
+              "host": ["{{gateway_url}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Validate Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/auth/validate",
+              "host": ["{{gateway_url}}"],
+              "path": ["auth", "validate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/products?pageNumber=1&pageSize=20",
+              "host": ["{{gateway_url}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Product By SKU",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/products/sku/PROD001",
+              "host": ["{{gateway_url}}"],
+              "path": ["products", "sku", "PROD001"]
+            }
+          }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"PROD001\",\n  \"name\": \"Sample Product\",\n  \"description\": \"Product description\",\n  \"uom\": \"PCS\",\n  \"weight\": 1.5,\n  \"length\": 10,\n  \"width\": 5,\n  \"height\": 3,\n  \"category\": \"Electronics\",\n  \"reorderLevel\": 10,\n  \"maxStockLevel\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/products",
+              "host": ["{{gateway_url}}"],
+              "path": ["products"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Locations",
+      "item": [
+        {
+          "name": "Get All Locations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/locations?pageNumber=1&pageSize=20",
+              "host": ["{{gateway_url}}"],
+              "path": ["locations"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Location",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"A-01-01\",\n  \"name\": \"Zone A - Aisle 1 - Rack 1\",\n  \"type\": \"Rack\",\n  \"capacity\": 1000,\n  \"zone\": \"A\",\n  \"aisle\": \"01\",\n  \"rack\": \"01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/locations",
+              "host": ["{{gateway_url}}"],
+              "path": ["locations"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Get All Inventory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/inventory?pageNumber=1&pageSize=20",
+              "host": ["{{gateway_url}}"],
+              "path": ["inventory"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Inventory Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/inventory/transactions?pageNumber=1&pageSize=20",
+              "host": ["{{gateway_url}}"],
+              "path": ["inventory", "transactions"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inbound",
+      "item": [
+        {
+          "name": "Get All Inbounds",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/inbound?pageNumber=1&pageSize=20",
+              "host": ["{{gateway_url}}"],
+              "path": ["inbound"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Inbound",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplierName\": \"Supplier ABC\",\n  \"expectedDate\": \"2024-01-30\",\n  \"items\": [\n    {\n      \"productId\": \"PRODUCT_GUID_HERE\",\n      \"locationId\": \"LOCATION_GUID_HERE\",\n      \"orderedQuantity\": 100\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/inbound",
+              "host": ["{{gateway_url}}"],
+              "path": ["inbound"]
+            }
+          }
+        },
+        {
+          "name": "Receive Inbound",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inboundId\": \"INBOUND_GUID_HERE\",\n  \"items\": [\n    {\n      \"inboundItemId\": \"ITEM_GUID_HERE\",\n      \"receivedQuantity\": 100\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/inbound/receive",
+              "host": ["{{gateway_url}}"],
+              "path": ["inbound", "receive"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Outbound",
+      "item": [
+        {
+          "name": "Get All Outbounds",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/outbound?pageNumber=1&pageSize=20",
+              "host": ["{{gateway_url}}"],
+              "path": ["outbound"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Outbound",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Customer XYZ\",\n  \"shippingAddress\": \"123 Main St, City\",\n  \"items\": [\n    {\n      \"productId\": \"PRODUCT_GUID_HERE\",\n      \"locationId\": \"LOCATION_GUID_HERE\",\n      \"orderedQuantity\": 50\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/outbound",
+              "host": ["{{gateway_url}}"],
+              "path": ["outbound"]
+            }
+          }
+        },
+        {
+          "name": "Ship Outbound",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"outboundId\": \"OUTBOUND_GUID_HERE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/outbound/ship",
+              "host": ["{{gateway_url}}"],
+              "path": ["outbound", "ship"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment",
+      "item": [
+        {
+          "name": "Get All Payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/payment?pageNumber=1&pageSize=20",
+              "host": ["{{gateway_url}}"],
+              "path": ["payment"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"outboundId\": \"OUTBOUND_GUID_HERE\",\n  \"paymentType\": \"Prepaid\",\n  \"amount\": 1000.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"Credit Card\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/payment",
+              "host": ["{{gateway_url}}"],
+              "path": ["payment"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delivery",
+      "item": [
+        {
+          "name": "Get All Deliveries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/delivery?pageNumber=1&pageSize=20",
+              "host": ["{{gateway_url}}"],
+              "path": ["delivery"],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Track Delivery (Public)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/delivery/tracking/DEL-20240124-0001",
+              "host": ["{{gateway_url}}"],
+              "path": ["delivery", "tracking", "DEL-20240124-0001"]
+            }
+          }
+        },
+        {
+          "name": "Create Delivery",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"outboundId\": \"OUTBOUND_GUID_HERE\",\n  \"shippingAddress\": \"123 Main St, City\",\n  \"carrier\": \"FedEx\",\n  \"trackingNumber\": \"TRACK123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/delivery",
+              "host": ["{{gateway_url}}"],
+              "path": ["delivery"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
