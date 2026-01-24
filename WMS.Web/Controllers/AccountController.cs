@@ -39,7 +39,7 @@ public class AccountController : Controller
             Password = model.Password
         };
 
-        var result = await _apiService.PostAsync<ApiResponse<AuthResponse>>("api/auth/login", loginDto);
+        var result = await _apiService.PostAsync<ApiResponse<AuthResponse>>("auth/login", loginDto);
 
         if (result?.IsSuccess == true && result.Data != null)
         {
