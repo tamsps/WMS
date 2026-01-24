@@ -1,4 +1,6 @@
-﻿{
+# Fix Auth.API appsettings.json
+$json = @'
+{
   "Logging": {
     "LogLevel": {
       "Default": "Information",
@@ -26,3 +28,7 @@
     ]
   }
 }
+'@
+
+$json | Out-File "WMS.Auth.API/appsettings.json" -Encoding UTF8 -NoNewline
+Write-Host "? appsettings.json fixed!" -ForegroundColor Green

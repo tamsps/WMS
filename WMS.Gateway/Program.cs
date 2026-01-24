@@ -46,7 +46,7 @@ app.UseCors("AllowAll");
 // Map YARP reverse proxy
 app.MapReverseProxy();
 
-// Health check endpoint
+// Health check endpoint - Removed .WithOpenApi() to avoid version conflict
 app.MapGet("/health", () => Results.Ok(new
 {
     status = "healthy",
@@ -54,28 +54,117 @@ app.MapGet("/health", () => Results.Ok(new
     gateway = "WMS API Gateway",
     version = "1.0.0"
 }))
-.WithName("HealthCheck")
-.WithOpenApi();
+.WithName("HealthCheck");
 
-// Gateway info endpoint
+// Gateway info endpoint - Removed .WithOpenApi() to avoid version conflict
 app.MapGet("/gateway/info", () => Results.Ok(new
 {
     name = "WMS API Gateway",
     version = "1.0.0",
     description = "Unified entry point for all WMS microservices",
+    gatewayUrl = "https://localhost:7000",
     services = new[]
     {
-        new { name = "Auth", route = "/auth", port = 5001 },
-        new { name = "Products", route = "/products", port = 5002 },
-        new { name = "Locations", route = "/locations", port = 5003 },
-        new { name = "Inventory", route = "/inventory", port = 5006 },
-        new { name = "Inbound", route = "/inbound", port = 5004 },
-        new { name = "Outbound", route = "/outbound", port = 5005 },
-        new { name = "Payment", route = "/payment", port = 5007 },
-        new { name = "Delivery", route = "/delivery", port = 5008 }
+        new { 
+            name = "Auth", 
+            route = "/auth", 
+            backendUrl = "https://localhost:7081",
+            endpoints = new[] { 
+                "/auth/login", 
+                "/auth/register", 
+                "/auth/refresh", 
+                "/auth/me", 
+                "/auth/validate" 
+            }
+        },
+        new { 
+            name = "Products", 
+            route = "/products", 
+            backendUrl = "https://localhost:62527",
+            endpoints = new[] { 
+                "/products", 
+                "/products/{id}", 
+                "/products/sku/{sku}",
+                "/products/{id}/activate",
+                "/products/{id}/deactivate"
+            }
+        },
+        new { 
+            name = "Locations", 
+            route = "/locations", 
+            backendUrl = "https://localhost:62522",
+            endpoints = new[] { 
+                "/locations", 
+                "/locations/{id}", 
+                "/locations/code/{code}",
+                "/locations/{id}/activate",
+                "/locations/{id}/deactivate"
+            }
+        },
+        new { 
+            name = "Inventory", 
+            route = "/inventory", 
+            backendUrl = "https://localhost:62531",
+            endpoints = new[] { 
+                "/inventory", 
+                "/inventory/{id}", 
+                "/inventory/product/{productId}",
+                "/inventory/location/{locationId}",
+                "/inventory/transactions",
+                "/inventory/adjust",
+                "/inventory/transfer"
+            }
+        },
+        new { 
+            name = "Inbound", 
+            route = "/inbound", 
+            backendUrl = "https://localhost:62520",
+            endpoints = new[] { 
+                "/inbound", 
+                "/inbound/{id}", 
+                "/inbound/receive",
+                "/inbound/{id}/cancel"
+            }
+        },
+        new { 
+            name = "Outbound", 
+            route = "/outbound", 
+            backendUrl = "https://localhost:62519",
+            endpoints = new[] { 
+                "/outbound", 
+                "/outbound/{id}", 
+                "/outbound/pick",
+                "/outbound/ship",
+                "/outbound/{id}/cancel"
+            }
+        },
+        new { 
+            name = "Payment", 
+            route = "/payment", 
+            backendUrl = "https://localhost:62521",
+            endpoints = new[] { 
+                "/payment", 
+                "/payment/{id}", 
+                "/payment/confirm",
+                "/payment/{id}/cancel"
+            }
+        },
+        new { 
+            name = "Delivery", 
+            route = "/delivery", 
+            backendUrl = "https://localhost:62529",
+            endpoints = new[] { 
+                "/delivery", 
+                "/delivery/{id}", 
+                "/delivery/tracking/{trackingNumber}",
+                "/delivery/status",
+                "/delivery/complete",
+                "/delivery/fail",
+                "/delivery/event"
+            }
+        }
     }
 }))
-.WithName("GatewayInfo")
-.WithOpenApi();
+.WithName("GatewayInfo");
 
 app.Run();

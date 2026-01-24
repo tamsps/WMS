@@ -19,7 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WMS.Application\WMS.Application.csproj" />
     <!-- ? Added reference to Domain for DbContext -->
     <ProjectReference Include="..\WMS.Domain\WMS.Domain.csproj" />
   </ItemGroup>

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using WMS.Domain.Data;
+using WMS.Domain.Entities;
 using WMS.Domain.Enums;
 using WMS.Domain.Interfaces;
 using WMS.Inbound.API.Application.Mappers;
@@ -13,16 +14,13 @@ public class ReceiveInboundCommandHandler : IRequestHandler<ReceiveInboundComman
 {
     private readonly WMSDbContext _context;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly WMS.Application.Interfaces.IInventoryService _inventoryService;
 
     public ReceiveInboundCommandHandler(
         WMSDbContext context,
-        IUnitOfWork unitOfWork,
-        WMS.Application.Interfaces.IInventoryService inventoryService)
+        IUnitOfWork unitOfWork)
     {
         _context = context;
         _unitOfWork = unitOfWork;
-        _inventoryService = inventoryService;
     }
 
     public async Task<Result<InboundDto>> Handle(ReceiveInboundCommand request, CancellationToken cancellationToken)
@@ -69,21 +67,56 @@ public class ReceiveInboundCommandHandler : IRequestHandler<ReceiveInboundComman
                 var goodQuantity = receiveItem.ReceivedQuantity - (receiveItem.DamagedQuantity ?? 0);
                 if (goodQuantity > 0)
                 {
-                    var inventoryResult = await _inventoryService.UpdateInventoryAsync(
-                        inboundItem.ProductId,
-                        inboundItem.LocationId,
-                        goodQuantity,
-                        TransactionType.Inbound,
-                        inbound.InboundNumber,
-                        inbound.Id,
-                        request.CurrentUser
-                    );
+                    // Create or update inventory record directly
+                    var inventory = await _context.Inventories
+                        .FirstOrDefaultAsync(inv => inv.ProductId == inboundItem.ProductId && 
+                                                   inv.LocationId == inboundItem.LocationId, 
+                                          cancellationToken);
 
-                    if (!inventoryResult.IsSuccess)
+                    decimal balanceBefore;
+                    if (inventory == null)
                     {
-                        await _unitOfWork.RollbackTransactionAsync(cancellationToken);
-                        return Result<InboundDto>.Failure(inventoryResult.Errors.FirstOrDefault() ?? "Failed to update inventory");
+                        balanceBefore = 0;
+                        // Create new inventory record
+                        inventory = new Inventory
+                        {
+                            ProductId = inboundItem.ProductId,
+                            LocationId = inboundItem.LocationId,
+                            QuantityOnHand = goodQuantity,
+                            LastStockDate = DateTime.UtcNow,
+                            CreatedBy = request.CurrentUser,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.Inventories.Add(inventory);
                     }
+                    else
+                    {
+                        balanceBefore = inventory.QuantityOnHand;
+                        // Update existing inventory
+                        inventory.QuantityOnHand += goodQuantity;
+                        inventory.LastStockDate = DateTime.UtcNow;
+                        inventory.UpdatedBy = request.CurrentUser;
+                        inventory.UpdatedAt = DateTime.UtcNow;
+                    }
+
+                    // Create inventory transaction record
+                    var transaction = new InventoryTransaction
+                    {
+                        TransactionNumber = await GenerateTransactionNumberAsync(cancellationToken),
+                        TransactionType = TransactionType.Inbound,
+                        ProductId = inboundItem.ProductId,
+                        LocationId = inboundItem.LocationId,
+                        Quantity = goodQuantity,
+                        BalanceBefore = balanceBefore,
+                        BalanceAfter = balanceBefore + goodQuantity,
+                        ReferenceId = inbound.Id,
+                        ReferenceType = "Inbound",
+                        ReferenceNumber = inbound.InboundNumber,
+                        Notes = $"Received from inbound {inbound.InboundNumber}",
+                        CreatedBy = request.CurrentUser,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.InventoryTransactions.Add(transaction);
                 }
             }
 
@@ -92,6 +125,7 @@ public class ReceiveInboundCommandHandler : IRequestHandler<ReceiveInboundComman
             inbound.UpdatedBy = request.CurrentUser;
             inbound.UpdatedAt = DateTime.UtcNow;
 
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
             await _unitOfWork.CommitTransactionAsync(cancellationToken);
 
             return Result<InboundDto>.Success(InboundMapper.MapToDto(inbound), "Inbound received successfully");
@@ -101,5 +135,24 @@ public class ReceiveInboundCommandHandler : IRequestHandler<ReceiveInboundComman
             await _unitOfWork.RollbackTransactionAsync(cancellationToken);
             return Result<InboundDto>.Failure($"Failed to receive inbound: {ex.Message}");
         }
+    }
+
+    private async Task<string> GenerateTransactionNumberAsync(CancellationToken cancellationToken)
+    {
+        var today = DateTime.UtcNow;
+        var prefix = $"TXN-{today:yyyyMMdd}";
+
+        var lastTransaction = await _context.InventoryTransactions
+            .Where(t => t.TransactionNumber.StartsWith(prefix))
+            .OrderByDescending(t => t.TransactionNumber)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (lastTransaction == null)
+        {
+            return $"{prefix}-0001";
+        }
+
+        var lastNumber = int.Parse(lastTransaction.TransactionNumber.Split('-').Last());
+        return $"{prefix}-{(lastNumber + 1):D4}";
     }
 }

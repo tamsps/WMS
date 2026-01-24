@@ -21,7 +21,7 @@ public class ApiService : IApiService
         _httpContextAccessor = httpContextAccessor;
         _configuration = configuration;
 
-        var baseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5001";
+        var baseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5000";
         _httpClient.BaseAddress = new Uri(baseUrl);
     }
 

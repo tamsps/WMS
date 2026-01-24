@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using WMS.Auth.API.Interfaces;
+using WMS.Auth.API.Services;
 using WMS.Domain.Interfaces;
 using WMS.Domain.Data;
 using WMS.Domain.Repositories;
@@ -98,13 +99,12 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Dependency Injection - Services
-//builder.Services.AddScoped<WMS.Application.Interfaces.IAuthService, AuthService>();
-//builder.Services.AddScoped<WMS.Application.Interfaces.ITokenService>(sp => new TokenService(
-//    secretKey,
-//    jwtSettings["Issuer"] ?? "WMS.Auth.API",
-//    jwtSettings["Audience"] ?? "WMS.Client",
-//    int.Parse(jwtSettings["ExpirationMinutes"] ?? "60")
-//));
+builder.Services.AddScoped<ITokenService>(sp => new TokenService(
+    secretKey,
+    jwtSettings["Issuer"] ?? "WMS.Auth.API",
+    jwtSettings["Audience"] ?? "WMS.Client",
+    int.Parse(jwtSettings["ExpirationMinutes"] ?? "60")
+));
 
 var app = builder.Build();
 
