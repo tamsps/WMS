@@ -37,13 +37,68 @@ public class HomeController : Controller
 
         try
         {
-            // You can fetch actual statistics from API endpoints
-            // var productStats = await _apiService.GetAsync<dynamic>("api/products/statistics");
-            // model.TotalProducts = productStats?.total ?? 0;
+            // Fetch Product Statistics
+            var productResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("api/products?pageSize=1");
+            if (productResult?.IsSuccess == true && productResult.Data != null)
+            {
+                model.TotalProducts = productResult.Data.TotalCount;
+            }
+
+            // Fetch Location Statistics
+            var locationResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("api/location?pageSize=1");
+            if (locationResult?.IsSuccess == true && locationResult.Data != null)
+            {
+                model.TotalLocations = locationResult.Data.TotalCount;
+            }
+
+            // Fetch Inventory Statistics  
+            var inventoryResult = await _apiService.GetAsync<ApiResponse<PagedResult<InventoryViewModel>>>("api/inventory?pageSize=1000");
+            if (inventoryResult?.IsSuccess == true && inventoryResult.Data != null)
+            {
+                // Calculate total inventory quantity
+                model.TotalInventoryValue = inventoryResult.Data.Items.Sum(i => i.Quantity);
+            }
+
+            // Fetch Inbound Statistics
+            var inboundResult = await _apiService.GetAsync<ApiResponse<object>>("api/inbound/statistics?status=Pending");
+            if (inboundResult?.IsSuccess == true && inboundResult.Data != null)
+            {
+                var stats = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
+                    System.Text.Json.JsonSerializer.Serialize(inboundResult.Data));
+                if (stats.TryGetProperty("PendingCount", out var pendingCount))
+                {
+                    model.PendingInbound = pendingCount.GetInt32();
+                }
+            }
+
+            // Fetch Outbound Statistics
+            var outboundResult = await _apiService.GetAsync<ApiResponse<object>>("api/outbound/statistics?status=Pending");
+            if (outboundResult?.IsSuccess == true && outboundResult.Data != null)
+            {
+                var stats = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
+                    System.Text.Json.JsonSerializer.Serialize(outboundResult.Data));
+                if (stats.TryGetProperty("PendingCount", out var pendingCount))
+                {
+                    model.PendingOutbound = pendingCount.GetInt32();
+                }
+            }
+
+            // Fetch Delivery Statistics
+            var deliveryResult = await _apiService.GetAsync<ApiResponse<object>>("api/delivery/statistics?status=InTransit");
+            if (deliveryResult?.IsSuccess == true && deliveryResult.Data != null)
+            {
+                var stats = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
+                    System.Text.Json.JsonSerializer.Serialize(deliveryResult.Data));
+                if (stats.TryGetProperty("InTransitCount", out var inTransitCount))
+                {
+                    model.InTransitDeliveries = inTransitCount.GetInt32();
+                }
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching dashboard statistics");
+            TempData["WarningMessage"] = "Some statistics could not be loaded. Please refresh the page.";
         }
 
         return View(model);

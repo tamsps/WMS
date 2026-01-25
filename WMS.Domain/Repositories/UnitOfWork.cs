@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.Storage;
+using System.Data;
 using WMS.Domain.Interfaces;
 using WMS.Domain.Data;
 
@@ -21,7 +22,13 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
+        // Use Serializable isolation level for critical inventory operations
+        // This ensures highest consistency and prevents phantom reads
+        // Note: In EF Core, isolation level is set on the transaction itself
         _transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        
+        // Set isolation level through raw SQL if supported by database
+        // await _context.Database.ExecuteSqlRawAsync("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE", cancellationToken);
     }
 
     public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)

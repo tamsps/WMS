@@ -9,6 +9,21 @@ using WMS.Outbound.API.DTOs.Outbound;
 
 namespace WMS.Outbound.API.Application.Commands.PickOutbound;
 
+/// <summary>
+/// Handler for picking outbound items
+/// 
+/// INVENTORY RESERVATION PROCESS:
+/// - Validates available quantity before reserving
+/// - Increases QuantityReserved atomically
+/// - Uses optimistic concurrency control (RowVersion)
+/// - Prevents overselling through Available = OnHand - Reserved
+/// 
+/// CONCURRENCY CONTROL:
+/// - Multiple pickers can work simultaneously
+/// - Optimistic concurrency prevents double-allocation
+/// - User notified if inventory changed during pick
+/// - Must refresh and verify availability before retry
+/// </summary>
 public class PickOutboundCommandHandler : IRequestHandler<PickOutboundCommand, Result<OutboundDto>>
 {
     private readonly WMSDbContext _context;
@@ -41,44 +56,69 @@ public class PickOutboundCommandHandler : IRequestHandler<PickOutboundCommand, R
             return Result<OutboundDto>.Failure($"Cannot pick outbound in {outbound.Status} status");
         }
 
-        // Update picked quantities for items
-        foreach (var itemDto in request.Dto.Items)
+        await _unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        try
         {
-            var item = outbound.OutboundItems.FirstOrDefault(oi => oi.Id == itemDto.OutboundItemId);
-            if (item == null)
+            // Update picked quantities for items
+            foreach (var itemDto in request.Dto.Items)
             {
-                return Result<OutboundDto>.Failure($"Outbound item {itemDto.OutboundItemId} not found");
+                var item = outbound.OutboundItems.FirstOrDefault(oi => oi.Id == itemDto.OutboundItemId);
+                if (item == null)
+                {
+                    return Result<OutboundDto>.Failure($"Outbound item {itemDto.OutboundItemId} not found");
+                }
+
+                if (itemDto.PickedQuantity > item.OrderedQuantity)
+                {
+                    return Result<OutboundDto>.Failure($"Picked quantity cannot exceed ordered quantity for item {item.Product.SKU}");
+                }
+
+                // Reserve inventory
+                var inventory = await _context.Inventories
+                    .FirstOrDefaultAsync(i => i.ProductId == item.ProductId && i.LocationId == item.LocationId, cancellationToken);
+
+                if (inventory == null || inventory.QuantityAvailable < itemDto.PickedQuantity)
+                {
+                    return Result<OutboundDto>.Failure(
+                        $"Insufficient available inventory for product {item.Product.SKU}. " +
+                        $"Available: {inventory?.QuantityAvailable ?? 0}, Required: {itemDto.PickedQuantity}");
+                }
+
+                // Update inventory reservation
+                inventory.QuantityReserved += itemDto.PickedQuantity;
+                inventory.LastStockDate = DateTime.UtcNow;
+                inventory.UpdatedBy = request.CurrentUser;
+                inventory.UpdatedAt = DateTime.UtcNow;
+                
+                item.PickedQuantity = itemDto.PickedQuantity;
+                item.UpdatedBy = request.CurrentUser;
+                item.UpdatedAt = DateTime.UtcNow;
             }
 
-            if (itemDto.PickedQuantity > item.OrderedQuantity)
-            {
-                return Result<OutboundDto>.Failure($"Picked quantity cannot exceed ordered quantity for item {item.Product.SKU}");
-            }
+            outbound.Status = OutboundStatus.Picked;
+            outbound.UpdatedBy = request.CurrentUser;
+            outbound.UpdatedAt = DateTime.UtcNow;
 
-            // Reserve inventory
-            var inventory = await _context.Inventories
-                .FirstOrDefaultAsync(i => i.ProductId == item.ProductId && i.LocationId == item.LocationId, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.CommitTransactionAsync(cancellationToken);
 
-            if (inventory == null || inventory.QuantityAvailable < itemDto.PickedQuantity)
-            {
-                return Result<OutboundDto>.Failure($"Insufficient available inventory for product {item.Product.SKU}");
-            }
-
-            // Update inventory reservation
-            inventory.QuantityReserved += itemDto.PickedQuantity;
-            item.PickedQuantity = itemDto.PickedQuantity;
-            item.UpdatedBy = request.CurrentUser;
-            item.UpdatedAt = DateTime.UtcNow;
+            return Result<OutboundDto>.Success(
+                OutboundMapper.MapToDto(outbound),
+                "Outbound picking completed successfully. Inventory reserved.");
         }
-
-        outbound.Status = OutboundStatus.Picked;
-        outbound.UpdatedBy = request.CurrentUser;
-        outbound.UpdatedAt = DateTime.UtcNow;
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return Result<OutboundDto>.Success(
-            OutboundMapper.MapToDto(outbound),
-            "Outbound picking completed successfully");
+        catch (DbUpdateConcurrencyException ex)
+        {
+            await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+            return Result<OutboundDto>.Failure(
+                "Inventory was modified by another user during picking. " +
+                "Another pick or receipt may have occurred. " +
+                "Please refresh and verify inventory availability before retrying.");
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+            return Result<OutboundDto>.Failure($"Failed to pick outbound: {ex.Message}");
+        }
     }
 }

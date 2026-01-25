@@ -28,6 +28,9 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
             return Result<ProductDto>.Failure("Product not found");
         }
 
+        // Note: SKU is intentionally not updated here as it is immutable
+        // SKU is the unique identifier and cannot be changed after product creation
+        
         product.Name = request.Dto.Name;
         product.Description = request.Dto.Description;
         product.Category = request.Dto.Category;

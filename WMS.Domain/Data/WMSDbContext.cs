@@ -39,6 +39,18 @@ public class WMSDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // Configure RowVersion for all entities inheriting from BaseEntity
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property<byte[]>("RowVersion")
+                    .IsRowVersion()
+                    .IsConcurrencyToken();
+            }
+        }
+
         // Product Configuration
         modelBuilder.Entity<Product>(entity =>
         {
@@ -194,12 +206,17 @@ public class WMSDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.PaymentNumber).IsUnique();
-            entity.HasIndex(e => e.ExternalPaymentId);
+            entity.HasIndex(e => e.ExternalPaymentId); // ? Fast lookup by gateway ID
+            entity.HasIndex(e => e.SessionId); // ? Fast lookup by session ID
             entity.Property(e => e.PaymentNumber).HasMaxLength(50).IsRequired();
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
             entity.Property(e => e.Currency).HasMaxLength(10);
+            entity.Property(e => e.ExternalPaymentId).HasMaxLength(200);
+            entity.Property(e => e.SessionId).HasMaxLength(200);
+            entity.Property(e => e.PaymentGateway).HasMaxLength(50);
+            entity.Property(e => e.PaymentUrl).HasMaxLength(500);
 
-            // Payment -> Outbound (optional FK on Payment.OutboundId) - used by PaymentService
+            // Payment ? Outbound (optional FK on Payment.OutboundId) - used by PaymentService
             entity.HasOne(e => e.Outbound)
                 .WithOne()
                 .HasForeignKey<Payment>(e => e.OutboundId)
@@ -209,6 +226,15 @@ public class WMSDbContext : DbContext
         modelBuilder.Entity<PaymentEvent>(entity =>
         {
             entity.HasKey(e => e.Id);
+            
+            // ? Index on GatewayEventId for fast idempotency checks
+            entity.HasIndex(e => new { e.PaymentId, e.GatewayEventId })
+                .IsUnique()
+                .HasFilter("[GatewayEventId] IS NOT NULL"); // Unique constraint only when GatewayEventId is present
+            
+            entity.Property(e => e.GatewayEventId).HasMaxLength(200);
+            entity.Property(e => e.EventData).HasColumnType("nvarchar(max)");
+            
             entity.HasOne(e => e.Payment)
                 .WithMany(p => p.PaymentEvents)
                 .HasForeignKey(e => e.PaymentId)
@@ -220,9 +246,11 @@ public class WMSDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.DeliveryNumber).IsUnique();
-            entity.HasIndex(e => e.TrackingNumber);
+            entity.HasIndex(e => e.TrackingNumber); // ? Fast lookup by tracking number (for webhooks)
             entity.Property(e => e.DeliveryNumber).HasMaxLength(50).IsRequired();
             entity.Property(e => e.ShippingAddress).HasMaxLength(500);
+            entity.Property(e => e.TrackingNumber).HasMaxLength(100);
+            entity.Property(e => e.Carrier).HasMaxLength(100);
 
             // Relationship is configured from Outbound (FK: Outbound.DeliveryId)
         });
@@ -230,6 +258,15 @@ public class WMSDbContext : DbContext
         modelBuilder.Entity<DeliveryEvent>(entity =>
         {
             entity.HasKey(e => e.Id);
+            
+            // ? Index on PartnerEventId for fast idempotency checks
+            entity.HasIndex(e => new { e.DeliveryId, e.PartnerEventId })
+                .IsUnique()
+                .HasFilter("[PartnerEventId] IS NOT NULL"); // Unique constraint only when PartnerEventId is present
+            
+            entity.Property(e => e.PartnerEventId).HasMaxLength(200);
+            entity.Property(e => e.EventData).HasColumnType("nvarchar(max)");
+            
             entity.HasOne(e => e.Delivery)
                 .WithMany(d => d.DeliveryEvents)
                 .HasForeignKey(e => e.DeliveryId)
@@ -317,7 +354,7 @@ public class WMSDbContext : DbContext
                 Id = adminUserId,
                 Username = "admin",
                 Email = "admin@wms.com",
-                PasswordHash = "$2a$11$D7Z5z8YqJ5qH5F0ZK5Z5Z.Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z5Z", // Admin@123
+                PasswordHash = "$2a$11$D7Z5z8YqJ5qH5F0ZK5Z5Z.Z5Z5Z5Z5Z5Z5Z5Z5Z", // Admin@123
                 FirstName = "System",
                 LastName = "Administrator",
                 IsActive = true,

@@ -33,7 +33,7 @@ public class CreateOutboundCommandHandler : IRequestHandler<CreateOutboundComman
             return Result<OutboundDto>.Failure("At least one item is required");
         }
 
-        // Validate all products and locations exist
+        // Validate all products and locations exist and are active
         foreach (var itemDto in request.Dto.Items)
         {
             var product = await _context.Products.FindAsync(new object[] { itemDto.ProductId }, cancellationToken);
@@ -42,10 +42,22 @@ public class CreateOutboundCommandHandler : IRequestHandler<CreateOutboundComman
                 return Result<OutboundDto>.Failure($"Product with ID {itemDto.ProductId} not found");
             }
 
+            // Validate product is active
+            if (product.Status == ProductStatus.Inactive)
+            {
+                return Result<OutboundDto>.Failure($"Product {product.SKU} is inactive and cannot be used in transactions");
+            }
+
             var location = await _context.Locations.FindAsync(new object[] { itemDto.LocationId }, cancellationToken);
             if (location == null)
             {
                 return Result<OutboundDto>.Failure($"Location with ID {itemDto.LocationId} not found");
+            }
+
+            // Validate location is active
+            if (!location.IsActive)
+            {
+                return Result<OutboundDto>.Failure($"Location {location.Code} is inactive and cannot be used in transactions");
             }
 
             // Check inventory availability

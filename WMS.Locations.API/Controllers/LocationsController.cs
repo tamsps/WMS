@@ -7,7 +7,9 @@ using WMS.Locations.API.Application.Commands.ActivateLocation;
 using WMS.Locations.API.Application.Commands.DeactivateLocation;
 using WMS.Locations.API.Application.Queries.GetLocationById;
 using WMS.Locations.API.Application.Queries.GetAllLocations;
+using WMS.Locations.API.Application.Queries.GetActiveLocations;
 using WMS.Locations.API.Application.Queries.GetLocationByCode;
+using WMS.Locations.API.Application.Queries.CheckLocationCapacity;
 using WMS.Locations.API.DTOs.Location;
 
 namespace WMS.Locations.API.Controllers;
@@ -25,10 +27,14 @@ public class LocationsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all locations with pagination
+    /// Get all locations with pagination and filtering
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null, [FromQuery] bool? isActive = null)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int pageNumber = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string? searchTerm = null, 
+        [FromQuery] bool? isActive = null)
     {
         var query = new GetAllLocationsQuery
         {
@@ -36,6 +42,54 @@ public class LocationsController : ControllerBase
             PageSize = pageSize,
             SearchTerm = searchTerm,
             IsActive = isActive
+        };
+
+        var result = await _mediator.Send(query);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(result);
+        }
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get all active locations (convenience endpoint for transactions)
+    /// </summary>
+    [HttpGet("active")]
+    public async Task<IActionResult> GetActive(
+        [FromQuery] int pageNumber = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? locationType = null)
+    {
+        var query = new GetActiveLocationsQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            SearchTerm = searchTerm,
+            LocationType = locationType
+        };
+
+        var result = await _mediator.Send(query);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(result);
+        }
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Check if a location has sufficient capacity
+    /// </summary>
+    [HttpGet("{id}/check-capacity")]
+    public async Task<IActionResult> CheckCapacity(Guid id, [FromQuery] decimal requiredCapacity)
+    {
+        var query = new CheckLocationCapacityQuery
+        {
+            LocationId = id,
+            RequiredCapacity = requiredCapacity
         };
 
         var result = await _mediator.Send(query);

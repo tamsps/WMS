@@ -4,6 +4,7 @@ using MediatR;
 using WMS.Payment.API.Application.Commands.CreatePayment;
 using WMS.Payment.API.Application.Commands.ConfirmPayment;
 using WMS.Payment.API.Application.Commands.CancelPayment;
+using WMS.Payment.API.Application.Commands.ProcessWebhook;
 using WMS.Payment.API.Application.Queries.GetPaymentById;
 using WMS.Payment.API.Application.Queries.GetAllPayments;
 using WMS.Payment.API.DTOs.Payment;
@@ -87,7 +88,7 @@ public class PaymentController : ControllerBase
     }
 
     /// <summary>
-    /// Confirm payment
+    /// Confirm payment (manual confirmation)
     /// </summary>
     [HttpPost("confirm")]
     [Authorize(Roles = "Admin,Manager")]
@@ -107,6 +108,35 @@ public class PaymentController : ControllerBase
         {
             return BadRequest(result);
         }
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Process payment gateway webhook (idempotent)
+    /// 
+    /// IDEMPOTENCY:
+    /// - GatewayEventId must be unique for each webhook
+    /// - Duplicate webhooks with same GatewayEventId are safely ignored
+    /// - All webhook attempts are logged for audit
+    /// - Always returns 200 OK to prevent gateway retries
+    /// </summary>
+    [HttpPost("webhook")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ProcessWebhook([FromBody] PaymentWebhookDto dto)
+    {
+        var command = new ProcessWebhookCommand { Dto = dto };
+        var result = await _mediator.Send(command);
+
+        if (!result.IsSuccess)
+        {
+            return Ok(new 
+            { 
+                IsSuccess = true,
+                Message = "Webhook received",
+                Error = result.Errors.FirstOrDefault()
+            });
+        }
+
         return Ok(result);
     }
 

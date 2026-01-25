@@ -6,6 +6,11 @@ using WMS.Products.API.Common.Models;
 
 namespace WMS.Products.API.Application.Commands.DeactivateProduct;
 
+/// <summary>
+/// Handler for deactivating a product
+/// Deactivated products cannot be used in new warehouse transactions
+/// Historical transactions with deactivated products remain valid
+/// </summary>
 public class DeactivateProductCommandHandler : IRequestHandler<DeactivateProductCommand, Result>
 {
     private readonly IRepository<Product> _productRepository;
@@ -27,6 +32,11 @@ public class DeactivateProductCommandHandler : IRequestHandler<DeactivateProduct
             return Result.Failure("Product not found");
         }
 
+        if (product.Status == ProductStatus.Inactive)
+        {
+            return Result.Failure("Product is already inactive");
+        }
+
         product.Status = ProductStatus.Inactive;
         product.UpdatedBy = request.CurrentUser;
         product.UpdatedAt = DateTime.UtcNow;
@@ -34,6 +44,6 @@ public class DeactivateProductCommandHandler : IRequestHandler<DeactivateProduct
         await _productRepository.UpdateAsync(product);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success("Product deactivated successfully");
+        return Result.Success("Product deactivated successfully. Existing inventory and historical transactions remain unaffected.");
     }
 }

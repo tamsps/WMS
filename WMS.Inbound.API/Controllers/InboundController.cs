@@ -4,6 +4,8 @@ using MediatR;
 using System.Security.Claims;
 using WMS.Inbound.API.Application.Commands.CreateInbound;
 using WMS.Inbound.API.Application.Commands.ReceiveInbound;
+using WMS.Inbound.API.Application.Commands.PutAwayInbound;
+using WMS.Inbound.API.Application.Commands.CompleteInbound;
 using WMS.Inbound.API.Application.Commands.CancelInbound;
 using WMS.Inbound.API.Application.Queries.GetInboundById;
 using WMS.Inbound.API.Application.Queries.GetAllInbounds;
@@ -99,7 +101,8 @@ public class InboundController : ControllerBase
     }
 
     /// <summary>
-    /// Receive inbound shipment items (updates inventory)
+    /// Receive inbound shipment items (updates inventory atomically)
+    /// Validates capacity and product status before updating inventory
     /// </summary>
     [HttpPost("{id}/receive")]
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
@@ -134,7 +137,60 @@ public class InboundController : ControllerBase
     }
 
     /// <summary>
+    /// Mark inbound as put away (goods moved to storage)
+    /// Transitions from Received to PutAway status
+    /// </summary>
+    [HttpPost("{id}/putaway")]
+    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
+    public async Task<IActionResult> PutAway(Guid id)
+    {
+        var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        
+        var command = new PutAwayInboundCommand 
+        { 
+            Id = id, 
+            CurrentUser = currentUser 
+        };
+        
+        var result = await _mediator.Send(command);
+        
+        if (!result.IsSuccess)
+        {
+            return BadRequest(result);
+        }
+        
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Complete an inbound shipment
+    /// Finalizes the inbound process
+    /// </summary>
+    [HttpPost("{id}/complete")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> Complete(Guid id)
+    {
+        var currentUser = User.FindFirst(ClaimTypes.Name)?.Value ?? "System";
+        
+        var command = new CompleteInboundCommand 
+        { 
+            Id = id, 
+            CurrentUser = currentUser 
+        };
+        
+        var result = await _mediator.Send(command);
+        
+        if (!result.IsSuccess)
+        {
+            return BadRequest(result);
+        }
+        
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Cancel an inbound shipment
+    /// Can only cancel shipments in Pending status
     /// </summary>
     [HttpPost("{id}/cancel")]
     [Authorize(Roles = "Admin,Manager")]
@@ -185,6 +241,8 @@ public class InboundController : ControllerBase
             TotalCount = result.Data!.TotalCount,
             PendingCount = result.Data.Items.Count(i => i.Status == "Pending"),
             ReceivedCount = result.Data.Items.Count(i => i.Status == "Received"),
+            PutAwayCount = result.Data.Items.Count(i => i.Status == "PutAway"),
+            CompletedCount = result.Data.Items.Count(i => i.Status == "Completed"),
             CancelledCount = result.Data.Items.Count(i => i.Status == "Cancelled")
         };
 

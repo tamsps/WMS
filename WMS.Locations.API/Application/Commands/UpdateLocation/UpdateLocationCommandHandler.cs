@@ -28,6 +28,14 @@ public class UpdateLocationCommandHandler : IRequestHandler<UpdateLocationComman
             return Result<LocationDto>.Failure("Location not found");
         }
 
+        // Validate capacity cannot be reduced below current occupancy
+        if (request.Dto.Capacity < location.CurrentOccupancy)
+        {
+            return Result<LocationDto>.Failure(
+                $"Cannot reduce capacity to {request.Dto.Capacity} because current occupancy is {location.CurrentOccupancy}. " +
+                $"Please remove inventory first or increase the capacity value.");
+        }
+
         location.Name = request.Dto.Name;
         location.Description = request.Dto.Description;
         location.Capacity = request.Dto.Capacity;

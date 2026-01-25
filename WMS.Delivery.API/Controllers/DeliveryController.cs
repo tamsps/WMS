@@ -6,6 +6,7 @@ using WMS.Delivery.API.Application.Commands.UpdateDeliveryStatus;
 using WMS.Delivery.API.Application.Commands.CompleteDelivery;
 using WMS.Delivery.API.Application.Commands.FailDelivery;
 using WMS.Delivery.API.Application.Commands.AddDeliveryEvent;
+using WMS.Delivery.API.Application.Commands.ProcessDeliveryWebhook;
 using WMS.Delivery.API.Application.Queries.GetDeliveryById;
 using WMS.Delivery.API.Application.Queries.GetAllDeliveries;
 using WMS.Delivery.API.Application.Queries.GetDeliveryByTrackingNumber;
@@ -127,6 +128,46 @@ public class DeliveryController : ControllerBase
         {
             return BadRequest(result);
         }
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Process delivery partner webhook (idempotent, asynchronous)
+    /// 
+    /// IDEMPOTENCY:
+    /// - PartnerEventId must be unique for each webhook
+    /// - Duplicate webhooks with same PartnerEventId are safely ignored
+    /// - All webhook attempts are logged for audit
+    /// - Always returns 200 OK to prevent partner retries
+    /// 
+    /// ASYNCHRONOUS FLOW:
+    /// - Webhook processed independently from warehouse operations
+    /// - Separate transaction from inventory
+    /// - Business rules triggered after status update
+    /// </summary>
+    [HttpPost("webhook")]
+    [AllowAnonymous] // Webhooks come from external delivery partners (verify signature in production)
+    public async Task<IActionResult> ProcessWebhook([FromBody] DeliveryWebhookDto dto)
+    {
+        // In production, add webhook signature verification here
+        // e.g., FedEx signature, UPS signature validation, etc.
+
+        var command = new ProcessDeliveryWebhookCommand { Dto = dto };
+        var result = await _mediator.Send(command);
+
+        // Always return 200 OK to partner (prevents retries)
+        // Even for failures, we log and handle internally
+        if (!result.IsSuccess)
+        {
+            // Log the error but return OK to prevent partner retries
+            return Ok(new 
+            { 
+                IsSuccess = true, // Tell partner we received it
+                Message = "Webhook received (failed processing, logged for review)",
+                Error = result.Errors.FirstOrDefault()
+            });
+        }
+
         return Ok(result);
     }
 

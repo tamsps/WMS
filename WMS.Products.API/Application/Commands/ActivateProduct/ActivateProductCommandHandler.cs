@@ -6,6 +6,10 @@ using WMS.Products.API.Common.Models;
 
 namespace WMS.Products.API.Application.Commands.ActivateProduct;
 
+/// <summary>
+/// Handler for activating a product
+/// Activated products can participate in new warehouse transactions
+/// </summary>
 public class ActivateProductCommandHandler : IRequestHandler<ActivateProductCommand, Result>
 {
     private readonly IRepository<Product> _productRepository;
@@ -25,6 +29,11 @@ public class ActivateProductCommandHandler : IRequestHandler<ActivateProductComm
         if (product == null)
         {
             return Result.Failure("Product not found");
+        }
+
+        if (product.Status == ProductStatus.Active)
+        {
+            return Result.Failure("Product is already active");
         }
 
         product.Status = ProductStatus.Active;

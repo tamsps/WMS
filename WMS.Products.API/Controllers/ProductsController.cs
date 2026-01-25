@@ -7,8 +7,10 @@ using WMS.Products.API.Application.Commands.ActivateProduct;
 using WMS.Products.API.Application.Commands.DeactivateProduct;
 using WMS.Products.API.Application.Queries.GetProductById;
 using WMS.Products.API.Application.Queries.GetAllProducts;
+using WMS.Products.API.Application.Queries.GetActiveProducts;
 using WMS.Products.API.Application.Queries.GetProductBySku;
 using WMS.Products.API.DTOs.Product;
+using WMS.Domain.Enums;
 
 namespace WMS.Products.API.Controllers;
 
@@ -25,12 +27,51 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all products with pagination
+    /// Get all products with pagination and filtering
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchTerm = null)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int pageNumber = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? status = null)
     {
+        ProductStatus? productStatus = null;
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (Enum.TryParse<ProductStatus>(status, true, out var parsedStatus))
+            {
+                productStatus = parsedStatus;
+            }
+        }
+
         var query = new GetAllProductsQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            SearchTerm = searchTerm,
+            Status = productStatus
+        };
+
+        var result = await _mediator.Send(query);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(result);
+        }
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get all active products (convenience endpoint for transactions)
+    /// </summary>
+    [HttpGet("active")]
+    public async Task<IActionResult> GetActive(
+        [FromQuery] int pageNumber = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string? searchTerm = null)
+    {
+        var query = new GetActiveProductsQuery
         {
             PageNumber = pageNumber,
             PageSize = pageSize,

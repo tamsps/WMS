@@ -46,6 +46,14 @@ public class CreateLocationCommandHandler : IRequestHandler<CreateLocationComman
             {
                 return Result<LocationDto>.Failure("Parent location not found");
             }
+
+            if (!parentLocation.IsActive)
+            {
+                return Result<LocationDto>.Failure("Parent location is not active. Cannot create child location under inactive parent.");
+            }
+
+            // Prevent circular references - check if the parent is not a child of any future children
+            // This is a basic check; more sophisticated checks could be implemented
         }
 
         var location = new Location
@@ -59,8 +67,8 @@ public class CreateLocationCommandHandler : IRequestHandler<CreateLocationComman
             Shelf = request.Dto.Shelf,
             Bin = request.Dto.Bin,
             Capacity = request.Dto.Capacity,
-            CurrentOccupancy = 0,
-            IsActive = true,
+            CurrentOccupancy = 0, // New locations start with zero occupancy
+            IsActive = true, // New locations are active by default
             LocationType = request.Dto.LocationType,
             ParentLocationId = request.Dto.ParentLocationId,
             CreatedBy = request.CurrentUser

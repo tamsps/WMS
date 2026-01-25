@@ -20,6 +20,13 @@ public class GetAllProductsQueryHandler : IRequestHandler<GetAllProductsQuery, R
     {
         var query = _context.Products.AsQueryable();
 
+        // Filter by status if specified
+        if (request.Status.HasValue)
+        {
+            query = query.Where(p => p.Status == request.Status.Value);
+        }
+
+        // Filter by search term
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             query = query.Where(p =>

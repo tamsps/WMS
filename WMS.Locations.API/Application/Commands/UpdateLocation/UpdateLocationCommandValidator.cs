@@ -15,8 +15,14 @@ public class UpdateLocationCommandValidator : AbstractValidator<UpdateLocationCo
             .NotEmpty().WithMessage("Location name is required")
             .MaximumLength(200).WithMessage("Name cannot exceed 200 characters");
 
+        RuleFor(x => x.Dto.Description)
+            .MaximumLength(500).WithMessage("Description cannot exceed 500 characters");
+
         RuleFor(x => x.Dto.Capacity)
-            .GreaterThanOrEqualTo(0).WithMessage("Capacity cannot be negative");
+            .GreaterThan(0).WithMessage("Capacity must be greater than 0");
+
+        // Note: Capacity cannot be reduced below current occupancy
+        // This validation is performed in the handler with access to the database
 
         RuleFor(x => x.CurrentUser)
             .NotEmpty().WithMessage("Current user is required");
