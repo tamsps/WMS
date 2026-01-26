@@ -36,8 +36,9 @@
                 <div class="col-md-3">
                     <select name="filterStatus" class="form-select">
                         <option value="">All Status</option>
-                        <option value="Draft" selected="@(Model.FilterStatus == "Draft")">Draft</option>
-                        <option value="Receiving" selected="@(Model.FilterStatus == "Receiving")">Receiving</option>
+                        <option value="Pending" selected="@(Model.FilterStatus == "Pending")">Pending</option>
+                        <option value="Received" selected="@(Model.FilterStatus == "Received")">Received</option>
+                        <option value="PutAway" selected="@(Model.FilterStatus == "PutAway")">Put Away</option>
                         <option value="Completed" selected="@(Model.FilterStatus == "Completed")">Completed</option>
                         <option value="Cancelled" selected="@(Model.FilterStatus == "Cancelled")">Cancelled</option>
                     </select>
@@ -68,9 +69,11 @@
                         <tbody>
                             @foreach (var inbound in Model.Items)
                             {
-                                var statusClass = inbound.Status switch {
-                                    "Draft" => "secondary",
-                                    "Receiving" => "warning",
+                                var statusClass = inbound.Status switch
+                                {
+                                    "Pending" => "warning",
+                                    "Received" => "info",
+                                    "PutAway" => "primary",
                                     "Completed" => "success",
                                     "Cancelled" => "danger",
                                     _ => "secondary"
@@ -92,12 +95,12 @@
                                     <td><span class="badge bg-@statusClass">@inbound.Status</span></td>
                                     <td>
                                         <div class="btn-group">
-                                            <a asp-action="Details" asp-route-id="@inbound.Id" class="btn btn-sm btn-info">
+                                            <a asp-action="Details" asp-route-id="@inbound.Id" class="btn btn-sm btn-info" title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            @if (inbound.Status == "Draft" || inbound.Status == "Receiving")
+                                            @if (inbound.Status == "Pending")
                                             {
-                                                <a asp-action="Receive" asp-route-id="@inbound.Id" class="btn btn-sm btn-success">
+                                                <a asp-action="Receive" asp-route-id="@inbound.Id" class="btn btn-sm btn-success" title="Receive Items">
                                                     <i class="bi bi-check-circle"></i> Receive
                                                 </a>
                                             }

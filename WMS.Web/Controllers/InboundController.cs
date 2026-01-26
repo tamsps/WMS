@@ -111,43 +111,15 @@ namespace WMS.Web.Controllers
 
             try
             {
-                // Step 1: Create the inbound order
                 var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>("inbound", model);
 
                 if (result?.IsSuccess == true && result.Data != null)
                 {
                     _logger.LogInformation("Inbound order created successfully with ID: {InboundId}", result.Data.Id);
-
-                    // Step 2: Auto-receive the inbound order (creates inventory and transactions)
-                    var receiveModel = new ReceiveInboundDto
-                    {
-                        InboundId = result.Data.Id,
-                        Items = result.Data.Items.Select(item => new ReceiveInboundItemDto
-                        {
-                            InboundItemId = item.Id,
-                            ReceivedQuantity = item.ExpectedQuantity, // Auto-receive expected quantity
-                            DamagedQuantity = 0,
-                            Notes = "Auto-received upon creation"
-                        }).ToList()
-                    };
-
-                    var receiveResult = await _apiService.PostAsync<ApiResponse<InboundViewModel>>(
-                        $"inbound/{result.Data.Id}/receive", 
-                        receiveModel);
-
-                    if (receiveResult?.IsSuccess == true)
-                    {
-                        _logger.LogInformation("Inbound order {InboundId} auto-received successfully. Inventory created.", result.Data.Id);
-                        TempData["SuccessMessage"] = "Inbound order created and received successfully. Inventory has been updated.";
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Inbound order {InboundId} created but auto-receive failed: {Error}", 
-                            result.Data.Id, receiveResult?.Message);
-                        TempData["WarningMessage"] = $"Inbound order created but auto-receive failed: {receiveResult?.Message}. Please manually receive the order.";
-                    }
-
-                    return RedirectToAction(nameof(Details), new { id = result.Data.Id });
+                    TempData["SuccessMessage"] = "Inbound order created successfully. Please receive the items.";
+                    
+                    // Redirect to Receive view so user can manually receive the goods
+                    return RedirectToAction(nameof(Receive), new { id = result.Data.Id });
                 }
                 else
                 {
@@ -227,11 +199,24 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"inbound/{id}/receive", model);
+                // Transform the view model to the correct DTO structure expected by the API
+                var receiveDto = new ReceiveInboundDto
+                {
+                    InboundId = model.Id,
+                    Items = model.Items.Select(item => new ReceiveInboundItemDto
+                    {
+                        InboundItemId = item.ItemId,  // Map ItemId to InboundItemId
+                        ReceivedQuantity = item.QuantityToReceive > 0 ? item.QuantityToReceive : item.ExpectedQuantity,
+                        DamagedQuantity = 0,  // Can be enhanced to allow user input
+                        Notes = item.Notes
+                    }).ToList()
+                }; 
+
+                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"inbound/{id}/receive", receiveDto);
 
                 if (result?.IsSuccess == true)
                 {
-                    TempData["SuccessMessage"] = "Inbound order received successfully";
+                    TempData["SuccessMessage"] = "Inbound order received successfully. Inventory has been updated.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
                 else

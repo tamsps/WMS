@@ -109,6 +109,7 @@
                                             <td>
                                                 <div class="fw-bold">@item.ProductName</div>
                                                 <small class="text-muted">SKU: @item.ProductSku</small>
+                                                <input type="hidden" name="Items[@i].ItemId" value="@item.ItemId" />
                                                 <input type="hidden" name="Items[@i].ProductId" value="@item.ProductId" />
                                                 <input type="hidden" name="Items[@i].ProductName" value="@item.ProductName" />
                                                 <input type="hidden" name="Items[@i].ProductSku" value="@item.ProductSku" />
@@ -117,6 +118,7 @@
                                                 @item.LocationName
                                                 <input type="hidden" name="Items[@i].LocationId" value="@item.LocationId" />
                                                 <input type="hidden" name="Items[@i].LocationName" value="@item.LocationName" />
+                                                <input type="hidden" name="Items[@i].LocationCode" value="@item.LocationCode" />
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge bg-secondary">@item.ExpectedQuantity</span>
