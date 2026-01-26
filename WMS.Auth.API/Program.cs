@@ -7,6 +7,7 @@ using WMS.Auth.API.Services;
 using WMS.Domain.Interfaces;
 using WMS.Domain.Data;
 using WMS.Domain.Repositories;
+using WMS.Domain.Extensions;
 //using WMS.Infrastructure.Services;
 using MediatR;
 using FluentValidation;
@@ -42,6 +43,9 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
+// Global Exception Handler
+builder.Services.AddGlobalExceptionHandler();
 
 // Database Configuration
 builder.Services.AddDbContext<WMSDbContext>(options =>
@@ -107,6 +111,9 @@ builder.Services.AddScoped<ITokenService>(sp => new TokenService(
 ));
 
 var app = builder.Build();
+
+// Global Exception Handler (must be first in pipeline)
+app.UseGlobalExceptionHandler();
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

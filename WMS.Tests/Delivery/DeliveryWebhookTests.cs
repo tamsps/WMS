@@ -8,6 +8,7 @@ using WMS.Domain.Data;
 using WMS.Domain.Entities;
 using WMS.Domain.Enums;
 using WMS.Domain.Repositories;
+using WMS.Domain.Interfaces;
 using WMS.Tests.Fixtures;
 using WMS.Tests.Helpers;
 
@@ -20,7 +21,7 @@ namespace WMS.Tests.Delivery;
 public class DeliveryWebhookTests : IDisposable
 {
     private readonly WMSDbContext _context;
-    private readonly UnitOfWork _unitOfWork;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly Mock<ILogger<ProcessDeliveryWebhookCommandHandler>> _loggerMock;
 
     public DeliveryWebhookTests()
@@ -167,7 +168,7 @@ public class DeliveryWebhookTests : IDisposable
         result.IsSuccess.Should().BeTrue();
 
         var updatedDelivery = await _context.Deliveries
-            .FindAsync(delivery.Id);
+            .FirstOrDefaultAsync(d => d.Id == delivery.Id);
 
         updatedDelivery.Should().NotBeNull();
         updatedDelivery!.Status.Should().Be(DeliveryStatus.Delivered);
@@ -209,7 +210,7 @@ public class DeliveryWebhookTests : IDisposable
 
         var updatedDelivery = await _context.Deliveries
             .Include(d => d.DeliveryEvents)
-            .FindAsync(delivery.Id);
+            .FirstOrDefaultAsync(d => d.Id == delivery.Id);
 
         var invalidEvent = updatedDelivery!.DeliveryEvents
             .FirstOrDefault(e => e.EventType == "WebhookInvalidTransition");

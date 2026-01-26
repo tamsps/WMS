@@ -1,0 +1,103 @@
+// ?? TEMPLATE FILE - Copy this to each API project
+// Location: {APIProject}/Middleware/GlobalExceptionHandler.cs
+// Example: WMS.Products.API/Middleware/GlobalExceptionHandler.cs
+
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using WMS.Domain.Exceptions;
+
+namespace YourAPINamespace.Middleware; // ?? CHANGE THIS to your API namespace (e.g., WMS.Products.API.Middleware)
+
+/// <summary>
+/// Global exception handler for this API
+/// Catches all unhandled exceptions, logs them, and returns standardized error responses
+/// </summary>
+public class GlobalExceptionHandler : IExceptionHandler
+{
+    private readonly ILogger<GlobalExceptionHandler> _logger;
+
+    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    {
+        _logger = logger;
+    }
+
+    public async ValueTask<bool> TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
+        CancellationToken cancellationToken)
+    {
+        // Log the exception
+        _logger.LogError(
+            exception,
+            "Unhandled exception: {ExceptionType} | Message: {Message} | Path: {Path} | Method: {Method}",
+            exception.GetType().Name,
+            exception.Message,
+            httpContext.Request.Path,
+            httpContext.Request.Method);
+
+        var problemDetails = CreateProblemDetails(httpContext, exception);
+
+        httpContext.Response.StatusCode = problemDetails.Status ?? 500;
+        httpContext.Response.ContentType = "application/problem+json";
+
+        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+
+        return true;
+    }
+
+    private ProblemDetails CreateProblemDetails(HttpContext context, Exception exception)
+    {
+        var (statusCode, title) = GetStatusCodeAndTitle(exception);
+
+        var problemDetails = new ProblemDetails
+        {
+            Status = statusCode,
+            Title = title,
+            Detail = GetDetailMessage(exception),
+            Instance = context.Request.Path,
+            Type = $"https://httpstatuses.com/{statusCode}",
+            Extensions =
+            {
+                ["traceId"] = context.TraceIdentifier,
+                ["timestamp"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC")
+            }
+        };
+
+        if (exception is ValidationException validationException)
+        {
+            problemDetails.Extensions["errors"] = validationException.Errors;
+        }
+
+        return problemDetails;
+    }
+
+    private static (int StatusCode, string Title) GetStatusCodeAndTitle(Exception exception)
+    {
+        return exception switch
+        {
+            BusinessRuleViolationException => (400, "Business Rule Violation"),
+            ResourceNotFoundException => (404, "Resource Not Found"),
+            ValidationException => (400, "Validation Failed"),
+            ConcurrencyException => (409, "Concurrency Conflict"),
+            DbUpdateConcurrencyException => (409, "Concurrency Conflict"),
+            DbUpdateException => (400, "Database Update Failed"),
+            ArgumentNullException => (400, "Bad Request"),
+            ArgumentException => (400, "Bad Request"),
+            InvalidOperationException => (400, "Invalid Operation"),
+            KeyNotFoundException => (404, "Not Found"),
+            UnauthorizedAccessException => (401, "Unauthorized"),
+            _ => (500, "Internal Server Error")
+        };
+    }
+
+    private static string GetDetailMessage(Exception exception)
+    {
+        return exception switch
+        {
+            DbUpdateConcurrencyException => "The resource was modified by another user. Please refresh and try again.",
+            DbUpdateException dbEx when dbEx.InnerException != null => $"{exception.Message} Details: {dbEx.InnerException.Message}",
+            _ => exception.Message
+        };
+    }
+}

@@ -5,6 +5,7 @@ using System.Text;
 using WMS.Domain.Interfaces;
 using WMS.Domain.Data;
 using WMS.Domain.Repositories;
+using WMS.Domain.Extensions;
 //using WMS.Infrastructure.Services;
 using MediatR;
 using FluentValidation;
@@ -18,6 +19,9 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "WMS Inbound API", Version = "v1" });
 });
+
+// Global Exception Handler
+builder.Services.AddGlobalExceptionHandler();
 
 // Database Configuration
 builder.Services.AddDbContext<WMSDbContext>(options =>
@@ -79,6 +83,9 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 //builder.Services.AddScoped<WMS.Application.Interfaces.IInventoryService, InventoryService>();
 
 var app = builder.Build();
+
+// Global Exception Handler (must be first in pipeline)
+app.UseGlobalExceptionHandler();
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

@@ -4,6 +4,7 @@ using WMS.Domain.Data;
 using WMS.Domain.Entities;
 using WMS.Domain.Enums;
 using WMS.Domain.Repositories;
+using WMS.Domain.Interfaces;
 using WMS.Outbound.API.Application.Commands.CreateOutbound;
 using WMS.Outbound.API.Application.Commands.PickOutbound;
 using WMS.Outbound.API.Application.Commands.ShipOutbound;
@@ -20,11 +21,13 @@ namespace WMS.Tests.Outbound;
 public class OutboundCommandHandlerTests : IDisposable
 {
     private readonly WMSDbContext _context;
-    private readonly UnitOfWork _unitOfWork;
+    private readonly IRepository<WMS.Domain.Entities.Outbound> _outboundRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public OutboundCommandHandlerTests()
     {
         _context = TestDbContextFactory.CreateInMemoryContext();
+        _outboundRepository = new Repository<WMS.Domain.Entities.Outbound>(_context);
         _unitOfWork = new UnitOfWork(_context);
         TestDataGenerator.ResetCounters();
     }
@@ -57,7 +60,7 @@ public class OutboundCommandHandlerTests : IDisposable
         };
 
         var command = new CreateOutboundCommand { Dto = dto, CurrentUser = "TestUser" };
-        var handler = new CreateOutboundCommandHandler(_context, _unitOfWork);
+        var handler = new CreateOutboundCommandHandler(_context, _outboundRepository, _unitOfWork);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);

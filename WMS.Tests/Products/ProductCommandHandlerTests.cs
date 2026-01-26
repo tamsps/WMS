@@ -3,6 +3,7 @@ using WMS.Domain.Data;
 using WMS.Domain.Entities;
 using WMS.Domain.Enums;
 using WMS.Domain.Repositories;
+using WMS.Domain.Interfaces;
 using WMS.Products.API.Application.Commands.CreateProduct;
 using WMS.Products.API.Application.Commands.UpdateProduct;
 using WMS.Products.API.Application.Commands.ActivateProduct;
@@ -22,8 +23,8 @@ namespace WMS.Tests.Products;
 public class ProductCommandHandlerTests : IDisposable
 {
     private readonly WMSDbContext _context;
-    private readonly Repository<Product> _productRepository;
-    private readonly UnitOfWork _unitOfWork;
+    private readonly IRepository<Product> _productRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ProductCommandHandlerTests()
     {
@@ -51,7 +52,7 @@ public class ProductCommandHandlerTests : IDisposable
         };
 
         var command = new CreateProductCommand { Dto = dto, CurrentUser = "TestUser" };
-        var handler = new CreateProductCommandHandler(_productRepository, _unitOfWork);
+        var handler = new CreateProductCommandHandler(_context, _productRepository, _unitOfWork);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -87,13 +88,15 @@ public class ProductCommandHandlerTests : IDisposable
         };
 
         var command = new CreateProductCommand { Dto = dto, CurrentUser = "TestUser" };
-        var handler = new CreateProductCommandHandler(_productRepository, _unitOfWork);
+        var handler = new CreateProductCommandHandler(_context, _productRepository, _unitOfWork);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(async () =>
-        {
-            await handler.Handle(command, CancellationToken.None);
-        });
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Contain("already exists");
     }
 
     [Fact]
@@ -138,7 +141,7 @@ public class ProductCommandHandlerTests : IDisposable
         await _productRepository.AddAsync(product);
         await _unitOfWork.SaveChangesAsync();
 
-        var command = new ActivateProductCommand { ProductId = product.Id, CurrentUser = "TestUser" };
+        var command = new ActivateProductCommand { Id = product.Id, CurrentUser = "TestUser" };
         var handler = new ActivateProductCommandHandler(_productRepository, _unitOfWork);
 
         // Act
@@ -147,7 +150,10 @@ public class ProductCommandHandlerTests : IDisposable
         // Assert
         result.Should().NotBeNull();
         result.IsSuccess.Should().BeTrue();
-        result.Data!.Status.Should().Be(ProductStatus.Active.ToString());
+        
+        // Verify status changed
+        var updatedProduct = await _productRepository.GetByIdAsync(product.Id);
+        updatedProduct!.Status.Should().Be(ProductStatus.Active);
     }
 
     [Fact]
@@ -158,7 +164,7 @@ public class ProductCommandHandlerTests : IDisposable
         await _productRepository.AddAsync(product);
         await _unitOfWork.SaveChangesAsync();
 
-        var command = new DeactivateProductCommand { ProductId = product.Id, CurrentUser = "TestUser" };
+        var command = new DeactivateProductCommand { Id = product.Id, CurrentUser = "TestUser" };
         var handler = new DeactivateProductCommandHandler(_productRepository, _unitOfWork);
 
         // Act
@@ -167,7 +173,10 @@ public class ProductCommandHandlerTests : IDisposable
         // Assert
         result.Should().NotBeNull();
         result.IsSuccess.Should().BeTrue();
-        result.Data!.Status.Should().Be(ProductStatus.Inactive.ToString());
+        
+        // Verify status changed
+        var updatedProduct = await _productRepository.GetByIdAsync(product.Id);
+        updatedProduct!.Status.Should().Be(ProductStatus.Inactive);
     }
 
     [Fact]
@@ -179,7 +188,7 @@ public class ProductCommandHandlerTests : IDisposable
         await _unitOfWork.SaveChangesAsync();
 
         var query = new GetProductByIdQuery { Id = product.Id };
-        var handler = new GetProductByIdQueryHandler(_context);
+        var handler = new GetProductByIdQueryHandler(_productRepository);
 
         // Act
         var result = await handler.Handle(query, CancellationToken.None);
