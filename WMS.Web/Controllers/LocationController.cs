@@ -25,7 +25,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var queryString = $"api/location?pageNumber={pageNumber}&pageSize={pageSize}";
+                var queryString = $"locations?pageNumber={pageNumber}&pageSize={pageSize}";
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                     queryString += $"&searchTerm={Uri.EscapeDataString(searchTerm)}";
                 if (!string.IsNullOrWhiteSpace(filterStatus))
@@ -57,7 +57,7 @@ namespace WMS.Web.Controllers
         }
 
         // GET: Location/Details/5
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -66,7 +66,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<LocationViewModel>>($"api/location/{id}");
+                var result = await _apiService.GetAsync<ApiResponse<LocationViewModel>>($"locations/{id}");
 
                 if (result?.Data == null)
                 {
@@ -114,7 +114,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<LocationViewModel>>("api/location", model);
+                var result = await _apiService.PostAsync<ApiResponse<LocationViewModel>>("locations", model);
 
                 if (result?.IsSuccess == true)
                 {
@@ -138,7 +138,7 @@ namespace WMS.Web.Controllers
         }
 
         // GET: Location/Edit/5
-        public async Task<IActionResult> Edit(int id)
+        public async Task<IActionResult> Edit(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -147,7 +147,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<LocationViewModel>>($"api/location/{id}");
+                var result = await _apiService.GetAsync<ApiResponse<LocationViewModel>>($"locations/{id}");
 
                 if (result?.Data == null)
                 {
@@ -185,7 +185,7 @@ namespace WMS.Web.Controllers
         // POST: Location/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, EditLocationViewModel model)
+        public async Task<IActionResult> Edit(Guid id, EditLocationViewModel model)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -206,7 +206,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PutAsync<ApiResponse<LocationViewModel>>($"api/location/{id}", model);
+                var result = await _apiService.PutAsync<ApiResponse<LocationViewModel>>($"locations/{id}", model);
 
                 if (result?.IsSuccess == true)
                 {
@@ -232,7 +232,7 @@ namespace WMS.Web.Controllers
         // POST: Location/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -241,7 +241,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var success = await _apiService.DeleteAsync($"api/location/{id}");
+                var success = await _apiService.DeleteAsync($"locations/{id}");
 
                 if (success)
                 {
@@ -264,7 +264,7 @@ namespace WMS.Web.Controllers
         // POST: Location/Activate/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Activate(int id)
+        public async Task<IActionResult> Activate(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -273,7 +273,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PatchAsync<ApiResponse<LocationViewModel>>($"api/location/{id}/activate", null);
+                var result = await _apiService.PatchAsync<ApiResponse<LocationViewModel>>($"locations/{id}/activate", null);
 
                 if (result?.IsSuccess == true)
                 {
@@ -296,7 +296,7 @@ namespace WMS.Web.Controllers
         // POST: Location/Deactivate/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Deactivate(int id)
+        public async Task<IActionResult> Deactivate(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -305,7 +305,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PatchAsync<ApiResponse<LocationViewModel>>($"api/location/{id}/deactivate", null);
+                var result = await _apiService.PatchAsync<ApiResponse<LocationViewModel>>($"locations/{id}/deactivate", null);
 
                 if (result?.IsSuccess == true)
                 {
@@ -326,11 +326,11 @@ namespace WMS.Web.Controllers
         }
 
         // Helper method to load parent locations
-        private async Task LoadParentLocations(int? excludeId = null)
+        private async Task LoadParentLocations(Guid? excludeId = null)
         {
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("api/location?pageSize=1000");
+                var result = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1000");
                 var locations = result?.Data?.Items ?? new List<LocationViewModel>();
 
                 if (excludeId.HasValue)

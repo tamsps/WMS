@@ -15,11 +15,11 @@ namespace WMS.Web.Models
 
     public class InventoryViewModel
     {
-        public int Id { get; set; }
-        public int ProductId { get; set; }
+        public Guid Id { get; set; }
+        public Guid ProductId { get; set; }
         public string ProductSKU { get; set; } = string.Empty;
         public string ProductName { get; set; } = string.Empty;
-        public int LocationId { get; set; }
+        public Guid LocationId { get; set; }
         public string LocationCode { get; set; } = string.Empty;
         public string LocationName { get; set; } = string.Empty;
         public decimal Quantity { get; set; }
@@ -44,8 +44,8 @@ namespace WMS.Web.Models
 
     public class InventoryTransactionViewModel
     {
-        public int Id { get; set; }
-        public int InventoryId { get; set; }
+        public Guid Id { get; set; }
+        public Guid InventoryId { get; set; }
         public string ProductSKU { get; set; } = string.Empty;
         public string ProductName { get; set; } = string.Empty;
         public string LocationCode { get; set; } = string.Empty;
@@ -53,7 +53,7 @@ namespace WMS.Web.Models
         public decimal Quantity { get; set; }
         public decimal BalanceAfter { get; set; }
         public string? ReferenceType { get; set; }
-        public int? ReferenceId { get; set; }
+        public Guid? ReferenceId { get; set; }
         public string? Notes { get; set; }
         public DateTime TransactionDate { get; set; }
         public string? CreatedBy { get; set; }

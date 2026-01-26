@@ -25,7 +25,7 @@ public class ProductController : Controller
 
         try
         {
-            var queryString = $"api/products?pageNumber={pageNumber}&pageSize={pageSize}";
+            var queryString = $"products?pageNumber={pageNumber}&pageSize={pageSize}";
             if (!string.IsNullOrEmpty(searchTerm))
                 queryString += $"&searchTerm={searchTerm}";
             if (!string.IsNullOrEmpty(status))
@@ -63,7 +63,7 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.GetAsync<ApiResponse<ProductViewModel>>($"api/products/{id}");
+            var result = await _apiService.GetAsync<ApiResponse<ProductViewModel>>($"products/{id}");
             
             if (result?.Data == null)
             {
@@ -109,7 +109,7 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.PostAsync<ApiResponse<ProductViewModel>>("api/products", model);
+            var result = await _apiService.PostAsync<ApiResponse<ProductViewModel>>("products", model);
 
             if (result?.IsSuccess == true)
             {
@@ -138,7 +138,7 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.GetAsync<ApiResponse<ProductViewModel>>($"api/products/{id}");
+            var result = await _apiService.GetAsync<ApiResponse<ProductViewModel>>($"products/{id}");
             
             if (result?.Data == null)
             {
@@ -195,7 +195,7 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.PutAsync<ApiResponse<ProductViewModel>>($"api/products/{id}", model);
+            var result = await _apiService.PutAsync<ApiResponse<ProductViewModel>>($"products/{id}", model);
 
             if (result?.IsSuccess == true)
             {
@@ -226,7 +226,7 @@ public class ProductController : Controller
 
         try
         {
-            var success = await _apiService.DeleteAsync($"api/products/{id}");
+            var success = await _apiService.DeleteAsync($"products/{id}");
 
             if (success)
             {
@@ -259,7 +259,7 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.PatchAsync<ApiResponse<ProductViewModel>>($"api/products/{id}/activate");
+            var result = await _apiService.PatchAsync<ApiResponse<ProductViewModel>>($"products/{id}/activate");
 
             if (result?.IsSuccess == true)
             {
@@ -292,7 +292,7 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.PatchAsync<ApiResponse<ProductViewModel>>($"api/products/{id}/deactivate");
+            var result = await _apiService.PatchAsync<ApiResponse<ProductViewModel>>($"products/{id}/deactivate");
 
             if (result?.IsSuccess == true)
             {

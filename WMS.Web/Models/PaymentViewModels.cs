@@ -15,7 +15,7 @@ namespace WMS.Web.Models
 
     public class PaymentViewModel
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string PaymentNumber { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;

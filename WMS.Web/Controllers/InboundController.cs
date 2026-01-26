@@ -25,7 +25,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var queryString = $"api/inbound?pageNumber={pageNumber}&pageSize={pageSize}";
+                var queryString = $"inbound?pageNumber={pageNumber}&pageSize={pageSize}";
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                     queryString += $"&searchTerm={Uri.EscapeDataString(searchTerm)}";
                 if (!string.IsNullOrWhiteSpace(filterStatus))
@@ -54,7 +54,7 @@ namespace WMS.Web.Controllers
         }
 
         // GET: Inbound/Details/5
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -63,7 +63,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<InboundViewModel>>($"api/inbound/{id}");
+                var result = await _apiService.GetAsync<ApiResponse<InboundViewModel>>($"inbound/{id}");
 
                 if (result?.Data == null)
                 {
@@ -111,7 +111,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>("api/inbound", model);
+                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>("inbound", model);
 
                 if (result?.IsSuccess == true)
                 {
@@ -135,7 +135,7 @@ namespace WMS.Web.Controllers
         }
 
         // GET: Inbound/Receive/5
-        public async Task<IActionResult> Receive(int id)
+        public async Task<IActionResult> Receive(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -144,7 +144,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<InboundViewModel>>($"api/inbound/{id}");
+                var result = await _apiService.GetAsync<ApiResponse<InboundViewModel>>($"inbound/{id}");
 
                 if (result?.Data == null)
                 {
@@ -187,7 +187,7 @@ namespace WMS.Web.Controllers
         // POST: Inbound/Receive/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Receive(int id, ReceiveInboundViewModel model)
+        public async Task<IActionResult> Receive(Guid id, ReceiveInboundViewModel model)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -196,7 +196,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"api/inbound/{id}/receive", model);
+                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"inbound/{id}/receive", model);
 
                 if (result?.IsSuccess == true)
                 {
@@ -220,7 +220,7 @@ namespace WMS.Web.Controllers
         // POST: Inbound/Complete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Complete(int id)
+        public async Task<IActionResult> Complete(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -229,7 +229,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"api/inbound/{id}/complete", null);
+                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"inbound/{id}/complete", null);
 
                 if (result?.IsSuccess == true)
                 {
@@ -252,7 +252,7 @@ namespace WMS.Web.Controllers
         // POST: Inbound/Cancel/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Cancel(int id)
+        public async Task<IActionResult> Cancel(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -261,7 +261,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"api/inbound/{id}/cancel", null);
+                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"inbound/{id}/cancel", null);
 
                 if (result?.IsSuccess == true)
                 {
@@ -286,10 +286,10 @@ namespace WMS.Web.Controllers
         {
             try
             {
-                var productsResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("api/products?pageSize=1000&status=active");
+                var productsResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("products?pageSize=1000&status=active");
                 ViewBag.Products = productsResult?.Data?.Items ?? new List<ProductViewModel>();
 
-                var locationsResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("api/location?pageSize=1000&isActive=true");
+                var locationsResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1000&isActive=true");
                 ViewBag.Locations = locationsResult?.Data?.Items ?? new List<LocationViewModel>();
             }
             catch (Exception ex)

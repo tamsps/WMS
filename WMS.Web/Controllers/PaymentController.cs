@@ -22,7 +22,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var queryString = $"api/payment?pageNumber={pageNumber}&pageSize={pageSize}";
+                var queryString = $"payment?pageNumber={pageNumber}&pageSize={pageSize}";
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                     queryString += $"&searchTerm={Uri.EscapeDataString(searchTerm)}";
                 if (!string.IsNullOrWhiteSpace(filterStatus))
@@ -50,14 +50,14 @@ namespace WMS.Web.Controllers
             }
         }
 
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
                 return RedirectToAction("Login", "Account");
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<PaymentViewModel>>($"api/payment/{id}");
+                var result = await _apiService.GetAsync<ApiResponse<PaymentViewModel>>($"payment/{id}");
                 if (result?.Data == null)
                 {
                     TempData["ErrorMessage"] = "Payment not found";
@@ -92,7 +92,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<PaymentViewModel>>("api/payment", model);
+                var result = await _apiService.PostAsync<ApiResponse<PaymentViewModel>>("payment", model);
                 if (result?.IsSuccess == true)
                 {
                     TempData["SuccessMessage"] = "Payment created successfully";
@@ -111,14 +111,14 @@ namespace WMS.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Confirm(int id)
+        public async Task<IActionResult> Confirm(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
                 return RedirectToAction("Login", "Account");
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<PaymentViewModel>>($"api/payment/{id}/confirm", null);
+                var result = await _apiService.PostAsync<ApiResponse<PaymentViewModel>>($"payment/{id}/confirm", null);
                 if (result?.IsSuccess == true)
                     TempData["SuccessMessage"] = "Payment confirmed successfully";
                 else

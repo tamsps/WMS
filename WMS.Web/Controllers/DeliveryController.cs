@@ -22,7 +22,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var queryString = $"api/delivery?pageNumber={pageNumber}&pageSize={pageSize}";
+                var queryString = $"delivery?pageNumber={pageNumber}&pageSize={pageSize}";
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                     queryString += $"&searchTerm={Uri.EscapeDataString(searchTerm)}";
                 if (!string.IsNullOrWhiteSpace(filterStatus))
@@ -50,14 +50,14 @@ namespace WMS.Web.Controllers
             }
         }
 
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
                 return RedirectToAction("Login", "Account");
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<DeliveryViewModel>>($"api/delivery/{id}");
+                var result = await _apiService.GetAsync<ApiResponse<DeliveryViewModel>>($"delivery/{id}");
                 if (result?.Data == null)
                 {
                     TempData["ErrorMessage"] = "Delivery not found";
@@ -92,7 +92,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<DeliveryViewModel>>("api/delivery", model);
+                var result = await _apiService.PostAsync<ApiResponse<DeliveryViewModel>>("delivery", model);
                 if (result?.IsSuccess == true)
                 {
                     TempData["SuccessMessage"] = "Delivery created successfully";
@@ -111,14 +111,14 @@ namespace WMS.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateStatus(int id, string status)
+        public async Task<IActionResult> UpdateStatus(Guid id, string status)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
                 return RedirectToAction("Login", "Account");
 
             try
             {
-                var result = await _apiService.PatchAsync<ApiResponse<DeliveryViewModel>>($"api/delivery/{id}/status", new { status });
+                var result = await _apiService.PatchAsync<ApiResponse<DeliveryViewModel>>($"delivery/{id}/status", new { status });
                 if (result?.IsSuccess == true)
                     TempData["SuccessMessage"] = "Delivery status updated successfully";
                 else
@@ -136,7 +136,7 @@ namespace WMS.Web.Controllers
         {
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<DeliveryViewModel>>($"api/delivery/track/{trackingNumber}");
+                var result = await _apiService.GetAsync<ApiResponse<DeliveryViewModel>>($"delivery/tracking/{trackingNumber}");
                 if (result?.Data == null)
                 {
                     TempData["ErrorMessage"] = "Delivery not found";

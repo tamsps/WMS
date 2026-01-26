@@ -22,7 +22,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var queryString = $"api/outbound?pageNumber={pageNumber}&pageSize={pageSize}";
+                var queryString = $"outbound?pageNumber={pageNumber}&pageSize={pageSize}";
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                     queryString += $"&searchTerm={Uri.EscapeDataString(searchTerm)}";
                 if (!string.IsNullOrWhiteSpace(filterStatus))
@@ -50,14 +50,14 @@ namespace WMS.Web.Controllers
             }
         }
 
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
                 return RedirectToAction("Login", "Account");
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<OutboundViewModel>>($"api/outbound/{id}");
+                var result = await _apiService.GetAsync<ApiResponse<OutboundViewModel>>($"outbound/{id}");
                 if (result?.Data == null)
                 {
                     TempData["ErrorMessage"] = "Outbound order not found";
@@ -73,10 +73,12 @@ namespace WMS.Web.Controllers
             }
         }
 
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
                 return RedirectToAction("Login", "Account");
+            
+            await LoadProductsAndLocations();
             return View(new CreateOutboundViewModel());
         }
 
@@ -88,37 +90,42 @@ namespace WMS.Web.Controllers
                 return RedirectToAction("Login", "Account");
 
             if (!ModelState.IsValid)
+            {
+                await LoadProductsAndLocations();
                 return View(model);
+            }
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>("api/outbound", model);
+                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>("outbound", model);
                 if (result?.IsSuccess == true)
                 {
                     TempData["SuccessMessage"] = "Outbound order created successfully";
                     return RedirectToAction(nameof(Details), new { id = result.Data?.Id });
                 }
                 TempData["ErrorMessage"] = result?.Message ?? "Failed to create outbound order";
+                await LoadProductsAndLocations();
                 return View(model);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating outbound order");
                 TempData["ErrorMessage"] = "Error creating outbound order";
+                await LoadProductsAndLocations();
                 return View(model);
             }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Ship(int id)
+        public async Task<IActionResult> Ship(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
                 return RedirectToAction("Login", "Account");
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>($"api/outbound/{id}/ship", null);
+                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>($"outbound/{id}/ship", null);
                 if (result?.IsSuccess == true)
                     TempData["SuccessMessage"] = "Outbound order shipped successfully";
                 else
@@ -134,14 +141,14 @@ namespace WMS.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Cancel(int id)
+        public async Task<IActionResult> Cancel(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
                 return RedirectToAction("Login", "Account");
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>($"api/outbound/{id}/cancel", null);
+                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>($"outbound/{id}/cancel", null);
                 if (result?.IsSuccess == true)
                     TempData["SuccessMessage"] = "Outbound order cancelled successfully";
                 else
@@ -153,6 +160,25 @@ namespace WMS.Web.Controllers
                 TempData["ErrorMessage"] = "Error cancelling outbound order";
             }
             return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // Helper method
+        private async Task LoadProductsAndLocations()
+        {
+            try
+            {
+                var productsResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("products?pageSize=1000&status=active");
+                ViewBag.Products = productsResult?.Data?.Items ?? new List<ProductViewModel>();
+
+                var locationsResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1000&isActive=true");
+                ViewBag.Locations = locationsResult?.Data?.Items ?? new List<LocationViewModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading products and locations");
+                ViewBag.Products = new List<ProductViewModel>();
+                ViewBag.Locations = new List<LocationViewModel>();
+            }
         }
     }
 }

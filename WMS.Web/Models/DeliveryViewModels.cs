@@ -15,9 +15,9 @@ namespace WMS.Web.Models
 
     public class DeliveryViewModel
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string TrackingNumber { get; set; } = string.Empty;
-        public int OutboundId { get; set; }
+        public Guid OutboundId { get; set; }
         public string OutboundReference { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string Carrier { get; set; } = string.Empty;
@@ -41,8 +41,7 @@ namespace WMS.Web.Models
         public string TrackingNumber { get; set; } = string.Empty;
 
         [Required]
-        [StringLength(50)]
-        public string OutboundId { get; set; } = string.Empty;
+        public Guid OutboundId { get; set; }
 
         [Required]
         [StringLength(100)]

@@ -16,7 +16,7 @@ namespace WMS.Web.Models
 
     public class LocationViewModel
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Code { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty;
@@ -27,7 +27,7 @@ namespace WMS.Web.Models
         public string? Bin { get; set; }
         public decimal Capacity { get; set; }
         public decimal OccupiedCapacity { get; set; }
-        public int? ParentLocationId { get; set; }
+        public Guid? ParentLocationId { get; set; }
         public string? ParentLocationName { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -68,12 +68,12 @@ namespace WMS.Web.Models
         [Range(0, double.MaxValue, ErrorMessage = "Capacity must be greater than or equal to 0")]
         public decimal Capacity { get; set; }
 
-        public int? ParentLocationId { get; set; }
+        public Guid? ParentLocationId { get; set; }
     }
 
     public class EditLocationViewModel
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         [Required(ErrorMessage = "Location code is required")]
         [StringLength(50, ErrorMessage = "Code cannot exceed 50 characters")]
@@ -105,6 +105,6 @@ namespace WMS.Web.Models
         [Range(0, double.MaxValue, ErrorMessage = "Capacity must be greater than or equal to 0")]
         public decimal Capacity { get; set; }
 
-        public int? ParentLocationId { get; set; }
+        public Guid? ParentLocationId { get; set; }
     }
 }

@@ -15,7 +15,7 @@ namespace WMS.Web.Models
 
     public class InboundViewModel
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string ReferenceNumber { get; set; } = string.Empty;
         public string SupplierName { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
@@ -33,12 +33,12 @@ namespace WMS.Web.Models
 
     public class InboundItemViewModel
     {
-        public int Id { get; set; }
-        public int InboundId { get; set; }
-        public int ProductId { get; set; }
+        public Guid Id { get; set; }
+        public Guid InboundId { get; set; }
+        public Guid ProductId { get; set; }
         public string ProductSku { get; set; } = string.Empty;
         public string ProductName { get; set; } = string.Empty;
-        public int LocationId { get; set; }
+        public Guid LocationId { get; set; }
         public string LocationCode { get; set; } = string.Empty;
         public string LocationName { get; set; } = string.Empty;
         public decimal ExpectedQuantity { get; set; }
@@ -69,10 +69,10 @@ namespace WMS.Web.Models
     public class CreateInboundItemViewModel
     {
         [Required]
-        public int ProductId { get; set; }
+        public Guid ProductId { get; set; }
 
         [Required]
-        public int LocationId { get; set; }
+        public Guid LocationId { get; set; }
 
         [Required]
         [Range(0.01, double.MaxValue, ErrorMessage = "Expected quantity must be greater than 0")]
@@ -84,7 +84,7 @@ namespace WMS.Web.Models
 
     public class ReceiveInboundViewModel
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string ReferenceNumber { get; set; } = string.Empty;
         public string SupplierName { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
@@ -94,11 +94,11 @@ namespace WMS.Web.Models
 
     public class ReceiveInboundItemViewModel
     {
-        public int ItemId { get; set; }
-        public int ProductId { get; set; }
+        public Guid ItemId { get; set; }
+        public Guid ProductId { get; set; }
         public string ProductName { get; set; } = string.Empty;
         public string ProductSku { get; set; } = string.Empty;
-        public int LocationId { get; set; }
+        public Guid LocationId { get; set; }
         public string LocationName { get; set; } = string.Empty;
         public string LocationCode { get; set; } = string.Empty;
         public decimal ExpectedQuantity { get; set; }

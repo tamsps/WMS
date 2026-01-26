@@ -25,7 +25,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var queryString = $"api/inventory?pageNumber={pageNumber}&pageSize={pageSize}";
+                var queryString = $"inventory?pageNumber={pageNumber}&pageSize={pageSize}";
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                     queryString += $"&searchTerm={Uri.EscapeDataString(searchTerm)}";
                 if (!string.IsNullOrWhiteSpace(filterLocation))
@@ -57,7 +57,7 @@ namespace WMS.Web.Controllers
         }
 
         // GET: Inventory/Details/5
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -66,7 +66,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<InventoryViewModel>>($"api/inventory/{id}");
+                var result = await _apiService.GetAsync<ApiResponse<InventoryViewModel>>($"inventory/{id}");
 
                 if (result?.Data == null)
                 {
@@ -85,7 +85,7 @@ namespace WMS.Web.Controllers
         }
 
         // GET: Inventory/Transactions
-        public async Task<IActionResult> Transactions(int? inventoryId = null, int pageNumber = 1, int pageSize = 20, string? filterType = null, DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<IActionResult> Transactions(Guid? inventoryId = null, int pageNumber = 1, int pageSize = 20, string? filterType = null, DateTime? startDate = null, DateTime? endDate = null)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
             {
@@ -94,7 +94,7 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var queryString = $"api/inventory/transactions?pageNumber={pageNumber}&pageSize={pageSize}";
+                var queryString = $"inventory/transactions?pageNumber={pageNumber}&pageSize={pageSize}";
                 if (inventoryId.HasValue)
                     queryString += $"&inventoryId={inventoryId}";
                 if (!string.IsNullOrWhiteSpace(filterType))
@@ -134,7 +134,7 @@ namespace WMS.Web.Controllers
         {
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("api/location?pageSize=1000&isActive=true");
+                var result = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1000&isActive=true");
                 ViewBag.Locations = result?.Data?.Items ?? new List<LocationViewModel>();
             }
             catch (Exception ex)

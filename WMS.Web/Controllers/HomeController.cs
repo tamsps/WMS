@@ -42,21 +42,21 @@ public class HomeController : Controller
         try
         {
             // Fetch Product Statistics
-            var productResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("api/products?pageSize=1");
+            var productResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("products?pageSize=1");
             if (productResult?.IsSuccess == true && productResult.Data != null)
             {
                 model.TotalProducts = productResult.Data.TotalCount;
             }
 
             // Fetch Location Statistics
-            var locationResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("api/location?pageSize=1");
+            var locationResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1");
             if (locationResult?.IsSuccess == true && locationResult.Data != null)
             {
                 model.TotalLocations = locationResult.Data.TotalCount;
             }
 
             // Fetch Inventory Statistics  
-            var inventoryResult = await _apiService.GetAsync<ApiResponse<PagedResult<InventoryViewModel>>>("api/inventory?pageSize=1000");
+            var inventoryResult = await _apiService.GetAsync<ApiResponse<PagedResult<InventoryViewModel>>>("inventory?pageSize=1000");
             if (inventoryResult?.IsSuccess == true && inventoryResult.Data != null)
             {
                 // Calculate total inventory quantity
@@ -64,7 +64,7 @@ public class HomeController : Controller
             }
 
             // Fetch Inbound Statistics
-            var inboundResult = await _apiService.GetAsync<ApiResponse<object>>("api/inbound/statistics?status=Pending");
+            var inboundResult = await _apiService.GetAsync<ApiResponse<object>>("inbound/statistics?status=Pending");
             if (inboundResult?.IsSuccess == true && inboundResult.Data != null)
             {
                 var stats = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
@@ -76,7 +76,7 @@ public class HomeController : Controller
             }
 
             // Fetch Outbound Statistics
-            var outboundResult = await _apiService.GetAsync<ApiResponse<object>>("api/outbound/statistics?status=Pending");
+            var outboundResult = await _apiService.GetAsync<ApiResponse<object>>("outbound/statistics?status=Pending");
             if (outboundResult?.IsSuccess == true && outboundResult.Data != null)
             {
                 var stats = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
@@ -88,7 +88,7 @@ public class HomeController : Controller
             }
 
             // Fetch Delivery Statistics
-            var deliveryResult = await _apiService.GetAsync<ApiResponse<object>>("api/delivery/statistics?status=InTransit");
+            var deliveryResult = await _apiService.GetAsync<ApiResponse<object>>("delivery/statistics?status=InTransit");
             if (deliveryResult?.IsSuccess == true && deliveryResult.Data != null)
             {
                 var stats = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(

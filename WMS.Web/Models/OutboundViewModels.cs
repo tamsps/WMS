@@ -15,7 +15,7 @@ namespace WMS.Web.Models
 
     public class OutboundViewModel
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string ReferenceNumber { get; set; } = string.Empty;
         public string CustomerName { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
@@ -35,12 +35,12 @@ namespace WMS.Web.Models
 
     public class OutboundItemViewModel
     {
-        public int Id { get; set; }
-        public int OutboundId { get; set; }
-        public int ProductId { get; set; }
+        public Guid Id { get; set; }
+        public Guid OutboundId { get; set; }
+        public Guid ProductId { get; set; }
         public string ProductSku { get; set; } = string.Empty;
         public string ProductName { get; set; } = string.Empty;
-        public int LocationId { get; set; }
+        public Guid LocationId { get; set; }
         public string LocationCode { get; set; } = string.Empty;
         public string LocationName { get; set; } = string.Empty;
         public decimal OrderedQuantity { get; set; }
@@ -73,10 +73,10 @@ namespace WMS.Web.Models
     public class CreateOutboundItemViewModel
     {
         [Required]
-        public int ProductId { get; set; }
+        public Guid ProductId { get; set; }
 
         [Required]
-        public int LocationId { get; set; }
+        public Guid LocationId { get; set; }
 
         [Required]
         [Range(0.01, double.MaxValue)]
