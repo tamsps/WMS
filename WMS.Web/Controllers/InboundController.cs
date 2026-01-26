@@ -111,12 +111,43 @@ namespace WMS.Web.Controllers
 
             try
             {
+                // Step 1: Create the inbound order
                 var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>("inbound", model);
 
-                if (result?.IsSuccess == true)
+                if (result?.IsSuccess == true && result.Data != null)
                 {
-                    TempData["SuccessMessage"] = "Inbound order created successfully";
-                    return RedirectToAction(nameof(Details), new { id = result.Data?.Id });
+                    _logger.LogInformation("Inbound order created successfully with ID: {InboundId}", result.Data.Id);
+
+                    // Step 2: Auto-receive the inbound order (creates inventory and transactions)
+                    var receiveModel = new ReceiveInboundDto
+                    {
+                        InboundId = result.Data.Id,
+                        Items = result.Data.Items.Select(item => new ReceiveInboundItemDto
+                        {
+                            InboundItemId = item.Id,
+                            ReceivedQuantity = item.ExpectedQuantity, // Auto-receive expected quantity
+                            DamagedQuantity = 0,
+                            Notes = "Auto-received upon creation"
+                        }).ToList()
+                    };
+
+                    var receiveResult = await _apiService.PostAsync<ApiResponse<InboundViewModel>>(
+                        $"inbound/{result.Data.Id}/receive", 
+                        receiveModel);
+
+                    if (receiveResult?.IsSuccess == true)
+                    {
+                        _logger.LogInformation("Inbound order {InboundId} auto-received successfully. Inventory created.", result.Data.Id);
+                        TempData["SuccessMessage"] = "Inbound order created and received successfully. Inventory has been updated.";
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Inbound order {InboundId} created but auto-receive failed: {Error}", 
+                            result.Data.Id, receiveResult?.Message);
+                        TempData["WarningMessage"] = $"Inbound order created but auto-receive failed: {receiveResult?.Message}. Please manually receive the order.";
+                    }
+
+                    return RedirectToAction(nameof(Details), new { id = result.Data.Id });
                 }
                 else
                 {

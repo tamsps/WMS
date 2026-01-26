@@ -107,4 +107,19 @@ namespace WMS.Web.Models
         public string UOM { get; set; } = string.Empty;
         public string? Notes { get; set; }
     }
+
+    // DTOs for API communication
+    public class ReceiveInboundDto
+    {
+        public Guid InboundId { get; set; }
+        public List<ReceiveInboundItemDto> Items { get; set; } = new();
+    }
+
+    public class ReceiveInboundItemDto
+    {
+        public Guid InboundItemId { get; set; }
+        public decimal ReceivedQuantity { get; set; }
+        public decimal? DamagedQuantity { get; set; }
+        public string? Notes { get; set; }
+    }
 }
