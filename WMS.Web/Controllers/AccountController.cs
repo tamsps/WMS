@@ -7,10 +7,12 @@ namespace WMS.Web.Controllers;
 public class AccountController : Controller
 {
     private readonly IApiService _apiService;
+    private readonly ILogger<AccountController> _logger;
 
-    public AccountController(IApiService apiService)
+    public AccountController(IApiService apiService, ILogger<AccountController> logger)
     {
         _apiService = apiService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -39,12 +41,36 @@ public class AccountController : Controller
             Password = model.Password
         };
 
+        _logger.LogInformation("Attempting login for user: {Username}", model.Username);
+
         var result = await _apiService.PostAsync<ApiResponse<AuthResponse>>("auth/login", loginDto);
 
         if (result?.IsSuccess == true && result.Data != null)
         {
-            _apiService.SetAccessToken(result.Data.AccessToken);
-            _apiService.SetRefreshToken(result.Data.RefreshToken);
+            _logger.LogInformation("Login successful for user: {Username}", model.Username);
+            
+            var token = result.Data.Token;
+            var refreshToken = result.Data.RefreshToken;
+            
+            _logger.LogInformation("Token received - Length: {TokenLength}, RefreshToken Length: {RefreshTokenLength}", 
+                token?.Length ?? 0, refreshToken?.Length ?? 0);
+
+            _apiService.SetAccessToken(token);
+            _apiService.SetRefreshToken(refreshToken);
+
+            // Ensure session is committed before redirect
+            await HttpContext.Session.CommitAsync();
+            
+            _logger.LogInformation("Session committed. Verifying token storage...");
+            
+            var storedToken = _apiService.GetAccessToken();
+            _logger.LogInformation("Token retrieved from session - Length: {StoredTokenLength}", 
+                storedToken?.Length ?? 0);
+
+            if (string.IsNullOrEmpty(storedToken))
+            {
+                _logger.LogError("CRITICAL: Token was not stored in session!");
+            }
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
@@ -54,6 +80,8 @@ public class AccountController : Controller
             return RedirectToAction("Index", "Home");
         }
 
+        _logger.LogWarning("Login failed for user: {Username}. Message: {Message}", 
+            model.Username, result?.Message);
         ModelState.AddModelError(string.Empty, result?.Message ?? "Login failed");
         return View(model);
     }
@@ -112,7 +140,8 @@ public class ApiResponse<T>
 
 public class AuthResponse
 {
-    public string AccessToken { get; set; } = string.Empty;
+    public string Token { get; set; } = string.Empty;
+    public string AccessToken => Token; // Compatibility alias
     public string RefreshToken { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;

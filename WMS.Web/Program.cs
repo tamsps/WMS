@@ -29,6 +29,9 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.Name = ".WMS.Session";
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 // Register HttpClient and ApiService
@@ -54,10 +57,12 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseRouting();
+app.UseStaticFiles();
 
-// Enable session before authentication
+// Enable session before routing and authorization
 app.UseSession();
+
+app.UseRouting();
 
 app.UseAuthorization();
 
@@ -67,6 +72,5 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();

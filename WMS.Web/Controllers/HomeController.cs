@@ -19,8 +19,12 @@ public class HomeController : Controller
     public async Task<IActionResult> Index()
     {
         // Check if user is logged in
-        if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
+        var token = _apiService.GetAccessToken();
+        
+        if (string.IsNullOrEmpty(token))
         {
+            _logger.LogWarning("Access token not found in session. Redirecting to login.");
+            TempData["InfoMessage"] = "Please log in to continue.";
             return RedirectToAction("Login", "Account");
         }
 

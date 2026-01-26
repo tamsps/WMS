@@ -9,17 +9,20 @@ public class ApiService : IApiService
     private readonly HttpClient _httpClient;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<ApiService> _logger;
     private const string AccessTokenKey = "AccessToken";
     private const string RefreshTokenKey = "RefreshToken";
 
     public ApiService(
         HttpClient httpClient,
         IHttpContextAccessor httpContextAccessor,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ILogger<ApiService> logger)
     {
         _httpClient = httpClient;
         _httpContextAccessor = httpContextAccessor;
         _configuration = configuration;
+        _logger = logger;
 
         var baseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5000";
         _httpClient.BaseAddress = new Uri(baseUrl);
@@ -149,30 +152,60 @@ public class ApiService : IApiService
 
     public string? GetAccessToken()
     {
-        return _httpContextAccessor.HttpContext?.Session.GetString(AccessTokenKey);
+        var session = _httpContextAccessor.HttpContext?.Session;
+        if (session == null)
+        {
+            _logger.LogWarning("HttpContext.Session is null when trying to get access token");
+            return null;
+        }
+
+        var token = session.GetString(AccessTokenKey);
+        _logger.LogInformation("GetAccessToken called. Token {Status}. SessionId: {SessionId}", 
+            string.IsNullOrEmpty(token) ? "NOT FOUND" : "FOUND", 
+            session.Id ?? "NO_SESSION_ID");
+        
+        return token;
     }
 
     public void SetAccessToken(string? token)
     {
+        var session = _httpContextAccessor.HttpContext?.Session;
+        if (session == null)
+        {
+            _logger.LogError("HttpContext.Session is null when trying to set access token");
+            return;
+        }
+
         if (string.IsNullOrEmpty(token))
         {
-            _httpContextAccessor.HttpContext?.Session.Remove(AccessTokenKey);
+            session.Remove(AccessTokenKey);
+            _logger.LogInformation("Access token removed from session. SessionId: {SessionId}", session.Id);
         }
         else
         {
-            _httpContextAccessor.HttpContext?.Session.SetString(AccessTokenKey, token);
+            session.SetString(AccessTokenKey, token);
+            _logger.LogInformation("Access token set in session. Token length: {Length}, SessionId: {SessionId}", 
+                token.Length, session.Id ?? "NO_SESSION_ID");
         }
     }
 
     public void SetRefreshToken(string? token)
     {
+        var session = _httpContextAccessor.HttpContext?.Session;
+        if (session == null)
+        {
+            _logger.LogError("HttpContext.Session is null when trying to set refresh token");
+            return;
+        }
+
         if (string.IsNullOrEmpty(token))
         {
-            _httpContextAccessor.HttpContext?.Session.Remove(RefreshTokenKey);
+            session.Remove(RefreshTokenKey);
         }
         else
         {
-            _httpContextAccessor.HttpContext?.Session.SetString(RefreshTokenKey, token);
+            session.SetString(RefreshTokenKey, token);
+            _logger.LogInformation("Refresh token set in session. Token length: {Length}", token.Length);
         }
     }
 
