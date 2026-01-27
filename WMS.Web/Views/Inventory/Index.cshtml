@@ -62,10 +62,9 @@
                                 <th>Product SKU</th>
                                 <th>Product Name</th>
                                 <th>Location</th>
-                                <th>Quantity</th>
-                                <th>UOM</th>
-                                <th>Reorder Level</th>
-                                <th>Max Level</th>
+                                <th class="text-center">On Hand</th>
+                                <th class="text-center">Reserved</th>
+                                <th class="text-center">Available</th>
                                 <th>Status</th>
                                 <th>Last Updated</th>
                                 <th>Actions</th>
@@ -77,33 +76,57 @@
                                 var statusClass = "success";
                                 var statusText = "Normal";
                                 
-                                if (inventory.ReorderLevel.HasValue && inventory.Quantity <= inventory.ReorderLevel.Value)
+                                if (inventory.QuantityAvailable <= 0)
                                 {
                                     statusClass = "danger";
-                                    statusText = "Low Stock";
+                                    statusText = "Out of Stock";
                                 }
-                                else if (inventory.MaxStockLevel.HasValue && inventory.Quantity >= inventory.MaxStockLevel.Value)
+                                else if (inventory.ReorderLevel.HasValue && inventory.QuantityAvailable <= inventory.ReorderLevel.Value)
                                 {
                                     statusClass = "warning";
+                                    statusText = "Low Stock";
+                                }
+                                else if (inventory.MaxStockLevel.HasValue && inventory.QuantityOnHand >= inventory.MaxStockLevel.Value)
+                                {
+                                    statusClass = "info";
                                     statusText = "Overstock";
                                 }
 
                                 <tr>
-                                    <td>@inventory.ProductSKU</td>
+                                    <td><strong>@inventory.ProductSKU</strong></td>
                                     <td>@inventory.ProductName</td>
                                     <td>
                                         <span class="badge bg-secondary">@inventory.LocationCode</span><br />
                                         <small class="text-muted">@inventory.LocationName</small>
                                     </td>
-                                    <td><strong>@inventory.Quantity</strong></td>
-                                    <td>@inventory.UOM</td>
-                                    <td>@(inventory.ReorderLevel?.ToString() ?? "N/A")</td>
-                                    <td>@(inventory.MaxStockLevel?.ToString() ?? "N/A")</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">@inventory.QuantityOnHand</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (inventory.QuantityReserved > 0)
+                                        {
+                                            <span class="badge bg-warning text-dark">@inventory.QuantityReserved</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-dark">0</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (inventory.QuantityAvailable > 0)
+                                        {
+                                            <span class="badge bg-success">@inventory.QuantityAvailable</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">0</span>
+                                        }
+                                    </td>
                                     <td>
                                         <span class="badge bg-@statusClass">@statusText</span>
                                     </td>
                                     <td>
-                                        @inventory.LastUpdated.ToString("yyyy-MM-dd HH:mm")
+                                        @inventory.LastStockDate.ToString("yyyy-MM-dd HH:mm")
                                         @if (!string.IsNullOrEmpty(inventory.LastUpdatedBy))
                                         {
                                             <br /><small class="text-muted">by @inventory.LastUpdatedBy</small>

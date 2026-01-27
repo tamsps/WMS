@@ -59,44 +59,29 @@ public class HomeController : Controller
             var inventoryResult = await _apiService.GetAsync<ApiResponse<PagedResult<InventoryViewModel>>>("inventory?pageSize=1000");
             if (inventoryResult?.IsSuccess == true && inventoryResult.Data != null)
             {
-                // Calculate total inventory quantity
-                model.TotalInventoryValue = inventoryResult.Data.Items.Sum(i => i.Quantity);
+                // Calculate total inventory quantity (use QuantityOnHand)
+                model.TotalInventoryValue = inventoryResult.Data.Items.Sum(i => i.QuantityOnHand);
             }
 
-            // Fetch Inbound Statistics
-            var inboundResult = await _apiService.GetAsync<ApiResponse<object>>("inbound/statistics?status=Pending");
+            // Fetch Inbound Count - Get total count from list endpoint
+            var inboundResult = await _apiService.GetAsync<ApiResponse<PagedResult<InboundViewModel>>>("inbound?pageSize=1");
             if (inboundResult?.IsSuccess == true && inboundResult.Data != null)
             {
-                var stats = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
-                    System.Text.Json.JsonSerializer.Serialize(inboundResult.Data));
-                if (stats.TryGetProperty("PendingCount", out var pendingCount))
-                {
-                    model.PendingInbound = pendingCount.GetInt32();
-                }
+                model.PendingInbound = inboundResult.Data.TotalCount;
             }
 
-            // Fetch Outbound Statistics
-            var outboundResult = await _apiService.GetAsync<ApiResponse<object>>("outbound/statistics?status=Pending");
+            // Fetch Outbound Count - Get total count from list endpoint
+            var outboundResult = await _apiService.GetAsync<ApiResponse<PagedResult<OutboundViewModel>>>("outbound?pageSize=1");
             if (outboundResult?.IsSuccess == true && outboundResult.Data != null)
             {
-                var stats = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
-                    System.Text.Json.JsonSerializer.Serialize(outboundResult.Data));
-                if (stats.TryGetProperty("PendingCount", out var pendingCount))
-                {
-                    model.PendingOutbound = pendingCount.GetInt32();
-                }
+                model.PendingOutbound = outboundResult.Data.TotalCount;
             }
 
-            // Fetch Delivery Statistics
-            var deliveryResult = await _apiService.GetAsync<ApiResponse<object>>("delivery/statistics?status=InTransit");
+            // Fetch Delivery Statistics - Get total count from list endpoint
+            var deliveryResult = await _apiService.GetAsync<ApiResponse<PagedResult<DeliveryViewModel>>>("delivery?pageSize=1");
             if (deliveryResult?.IsSuccess == true && deliveryResult.Data != null)
             {
-                var stats = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
-                    System.Text.Json.JsonSerializer.Serialize(deliveryResult.Data));
-                if (stats.TryGetProperty("InTransitCount", out var inTransitCount))
-                {
-                    model.InTransitDeliveries = inTransitCount.GetInt32();
-                }
+                model.InTransitDeliveries = deliveryResult.Data.TotalCount;
             }
         }
         catch (Exception ex)

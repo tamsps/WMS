@@ -22,11 +22,20 @@ namespace WMS.Web.Models
         public Guid LocationId { get; set; }
         public string LocationCode { get; set; } = string.Empty;
         public string LocationName { get; set; } = string.Empty;
-        public decimal Quantity { get; set; }
+
+        // Match API DTO properties
+        public decimal QuantityOnHand { get; set; }
+        public decimal QuantityReserved { get; set; }
+        public decimal QuantityAvailable { get; set; }
+
+        // Keep Quantity as alias for backward compatibility
+        public decimal Quantity => QuantityOnHand;
+
         public decimal? ReorderLevel { get; set; }
         public decimal? MaxStockLevel { get; set; }
         public string UOM { get; set; } = string.Empty;
-        public DateTime LastUpdated { get; set; }
+        public DateTime LastStockDate { get; set; }
+        public DateTime LastUpdated => LastStockDate;
         public string? LastUpdatedBy { get; set; }
     }
 
