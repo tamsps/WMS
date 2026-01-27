@@ -17,6 +17,8 @@ namespace WMS.Web.Models
     {
         public Guid Id { get; set; }
         public string ReferenceNumber { get; set; } = string.Empty;
+        public string OutboundNumber { get; set; } = string.Empty;  // Added
+        public string? OrderNumber { get; set; }  // Added
         public string CustomerName { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public DateTime OrderDate { get; set; }
@@ -45,6 +47,7 @@ namespace WMS.Web.Models
         public string LocationName { get; set; } = string.Empty;
         public decimal OrderedQuantity { get; set; }
         public decimal PickedQuantity { get; set; }
+        public decimal AvailableQuantity { get; set; }  // Added
         public string UOM { get; set; } = string.Empty;
     }
 
@@ -81,5 +84,62 @@ namespace WMS.Web.Models
         [Required]
         [Range(0.01, double.MaxValue)]
         public decimal OrderedQuantity { get; set; }
+    }
+
+    // DTOs for API communication
+    public class PickOutboundDto
+    {
+        public Guid OutboundId { get; set; }
+        public List<PickOutboundItemDto> Items { get; set; } = new();
+    }
+
+    public class PickOutboundItemDto
+    {
+        public Guid OutboundItemId { get; set; }
+        public decimal PickedQuantity { get; set; }
+    }
+
+    public class ShipOutboundDto
+    {
+        public Guid OutboundId { get; set; }
+    }
+
+    // View Models for Pick process
+    public class PickOutboundViewModel
+    {
+        public Guid Id { get; set; }
+        public string OutboundNumber { get; set; } = string.Empty;
+        public string? OrderNumber { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public List<PickOutboundItemViewModel> Items { get; set; } = new();
+    }
+
+    public class PickOutboundItemViewModel
+    {
+        public Guid ItemId { get; set; }
+        public Guid ProductId { get; set; }
+        public string ProductSku { get; set; } = string.Empty;
+        public string ProductName { get; set; } = string.Empty;
+        public Guid LocationId { get; set; }
+        public string LocationCode { get; set; } = string.Empty;
+        public string LocationName { get; set; } = string.Empty;
+        public decimal OrderedQuantity { get; set; }
+        public decimal PickedQuantity { get; set; }
+        public decimal AvailableQuantity { get; set; }
+        public decimal QuantityToPick { get; set; }
+        public string UOM { get; set; } = string.Empty;
+    }
+
+    // View Model for Ship process
+    public class ShipOutboundViewModel
+    {
+        public Guid Id { get; set; }
+        public string OutboundNumber { get; set; } = string.Empty;
+        public string? OrderNumber { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string ShippingAddress { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public List<OutboundItemViewModel> Items { get; set; } = new();
     }
 }

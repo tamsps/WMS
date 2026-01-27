@@ -98,10 +98,11 @@ namespace WMS.Web.Controllers
             try
             {
                 var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>("outbound", model);
-                if (result?.IsSuccess == true)
+                if (result?.IsSuccess == true && result.Data != null)
                 {
-                    TempData["SuccessMessage"] = "Outbound order created successfully";
-                    return RedirectToAction(nameof(Details), new { id = result.Data?.Id });
+                    TempData["SuccessMessage"] = "Outbound order created successfully. Please pick the items.";
+                    // Redirect to Pick view instead of Details
+                    return RedirectToAction(nameof(Pick), new { id = result.Data.Id });
                 }
                 TempData["ErrorMessage"] = result?.Message ?? "Failed to create outbound order";
                 await LoadProductsAndLocations();
@@ -116,8 +117,96 @@ namespace WMS.Web.Controllers
             }
         }
 
+        // GET: Outbound/Pick/5
+        public async Task<IActionResult> Pick(Guid id)
+        {
+            if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
+                return RedirectToAction("Login", "Account");
+
+            try
+            {
+                var result = await _apiService.GetAsync<ApiResponse<OutboundViewModel>>($"outbound/{id}");
+                if (result?.Data == null)
+                {
+                    TempData["ErrorMessage"] = "Outbound order not found";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var pickModel = new PickOutboundViewModel
+                {
+                    Id = result.Data.Id,
+                    OutboundNumber = result.Data.OutboundNumber,
+                    OrderNumber = result.Data.OrderNumber,
+                    CustomerName = result.Data.CustomerName,
+                    Status = result.Data.Status,
+                    Items = result.Data.Items.Select(i => new PickOutboundItemViewModel
+                    {
+                        ItemId = i.Id,
+                        ProductId = i.ProductId,
+                        ProductSku = i.ProductSku,
+                        ProductName = i.ProductName,
+                        LocationId = i.LocationId,
+                        LocationCode = i.LocationCode,
+                        LocationName = i.LocationName,
+                        OrderedQuantity = i.OrderedQuantity,
+                        PickedQuantity = i.PickedQuantity,
+                        AvailableQuantity = i.AvailableQuantity,
+                        UOM = i.UOM
+                    }).ToList()
+                };
+
+                return View(pickModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading outbound for picking");
+                TempData["ErrorMessage"] = "Error loading outbound order";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // POST: Outbound/Pick/5
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Pick(Guid id, PickOutboundViewModel model)
+        {
+            if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
+                return RedirectToAction("Login", "Account");
+
+            try
+            {
+                // Transform to DTO expected by API
+                var pickDto = new PickOutboundDto
+                {
+                    OutboundId = model.Id,
+                    Items = model.Items.Select(item => new PickOutboundItemDto
+                    {
+                        OutboundItemId = item.ItemId,
+                        PickedQuantity = item.QuantityToPick > 0 ? item.QuantityToPick : item.OrderedQuantity
+                    }).ToList()
+                };
+
+                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>("outbound/pick", pickDto);
+                if (result?.IsSuccess == true)
+                {
+                    TempData["SuccessMessage"] = "Items picked successfully. Inventory has been reserved.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = result?.Message ?? "Failed to pick items";
+                    return View(model);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error picking outbound items");
+                TempData["ErrorMessage"] = "Error picking items";
+                return View(model);
+            }
+        }
+
+        // GET: Outbound/Ship/5
         public async Task<IActionResult> Ship(Guid id)
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
@@ -125,18 +214,56 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>($"outbound/{id}/ship", null);
+                var result = await _apiService.GetAsync<ApiResponse<OutboundViewModel>>($"outbound/{id}");
+                if (result?.Data == null)
+                {
+                    TempData["ErrorMessage"] = "Outbound order not found";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                return View(result.Data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading outbound for shipping");
+                TempData["ErrorMessage"] = "Error loading outbound order";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // POST: Outbound/Ship/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Ship(Guid id, ShipOutboundViewModel model)
+        {
+            if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
+                return RedirectToAction("Login", "Account");
+
+            try
+            {
+                var shipDto = new ShipOutboundDto
+                {
+                    OutboundId = model.Id
+                };
+
+                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>("outbound/ship", shipDto);
                 if (result?.IsSuccess == true)
-                    TempData["SuccessMessage"] = "Outbound order shipped successfully";
+                {
+                    TempData["SuccessMessage"] = "Outbound order shipped successfully. Inventory has been deducted.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
                 else
-                    TempData["ErrorMessage"] = "Failed to ship outbound order";
+                {
+                    TempData["ErrorMessage"] = result?.Message ?? "Failed to ship outbound order";
+                    return View(model);
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error shipping outbound order");
                 TempData["ErrorMessage"] = "Error shipping outbound order";
+                return View(model);
             }
-            return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]

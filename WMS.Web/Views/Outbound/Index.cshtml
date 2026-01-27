@@ -29,17 +29,18 @@
             <form asp-action="Index" method="get" class="row g-3 mb-3">
                 <div class="col-md-4">
                     <label class="form-label">Search</label>
-                    <input type="text" name="searchTerm" value="@ViewBag.SearchTerm" class="form-control" placeholder="Search by reference, customer..." />
+                    <input type="text" name="searchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Search by outbound number, customer..." />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
+                    <select name="filterStatus" class="form-select">
                         <option value="">All Status</option>
-                        <option value="Draft" selected="@(ViewBag.StatusFilter == "Draft")">Draft</option>
-                        <option value="Picking" selected="@(ViewBag.StatusFilter == "Picking")">Picking</option>
-                        <option value="Picked" selected="@(ViewBag.StatusFilter == "Picked")">Picked</option>
-                        <option value="Shipped" selected="@(ViewBag.StatusFilter == "Shipped")">Shipped</option>
-                        <option value="Cancelled" selected="@(ViewBag.StatusFilter == "Cancelled")">Cancelled</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Picking">Picking</option>
+                        <option value="Picked">Picked</option>
+                        <option value="Packed">Packed</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Cancelled">Cancelled</option>
                     </select>
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
@@ -56,12 +57,10 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Reference Number</th>
+                            <th>Outbound Number</th>
                             <th>Customer</th>
                             <th>Order Date</th>
                             <th>Status</th>
-                            <th>Items</th>
-                            <th>Progress</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -70,60 +69,21 @@
                         {
                             @foreach (var item in Model.Items)
                             {
-                                var statusClass = item.Status switch
-                                {
-                                    "Draft" => "bg-secondary",
-                                    "Picking" => "bg-warning",
-                                    "Picked" => "bg-info",
-                                    "Shipped" => "bg-success",
-                                    "Cancelled" => "bg-danger",
-                                    _ => "bg-secondary"
-                                };
-                                var totalItems = item.TotalItems;
-                                var pickedItems = item.PickedItems;
-                                var progress = totalItems > 0 ? (int)((pickedItems / (decimal)totalItems) * 100) : 0;
-                                var progressClass = progress >= 100 ? "bg-success" : progress > 0 ? "bg-warning" : "bg-secondary";
-                                
                                 <tr>
                                     <td>
-                                        <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none fw-bold">
-                                            @item.ReferenceNumber
-                                        </a>
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="fw-bold">@item.OutboundNumber</a>
+                                        @if (!string.IsNullOrEmpty(item.OrderNumber))
+                                        {
+                                            <br/><small class="text-muted">Ref: @item.OrderNumber</small>
+                                        }
                                     </td>
                                     <td>@item.CustomerName</td>
                                     <td>@item.OrderDate.ToString("MMM dd, yyyy")</td>
-                                    <td>
-                                        <span class="badge @statusClass">@item.Status</span>
-                                    </td>
-                                    <td>@totalItems</td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="progress flex-grow-1 me-2" style="height: 20px; min-width: 100px;">
-                                                <div class="progress-bar @progressClass" role="progressbar" style="width: @progress%" aria-valuenow="@progress" aria-valuemin="0" aria-valuemax="100">
-                                                    @if (progress > 15)
-                                                    {
-                                                        <span>@pickedItems/@totalItems</span>
-                                                    }
-                                                </div>
-                                            </div>
-                                            @if (progress < 15)
-                                            {
-                                                <small class="text-muted">@pickedItems/@totalItems</small>
-                                            }
-                                        </div>
-                                    </td>
+                                    <td><span class="badge bg-secondary">@item.Status</span></td>
                                     <td class="text-end">
-                                        <div class="btn-group btn-group-sm">
-                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-outline-primary" title="View Details">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            @if (item.Status == "Draft" || item.Status == "Picking")
-                                            {
-                                                <a asp-action="Ship" asp-route-id="@item.Id" class="btn btn-outline-success" title="Ship Order">
-                                                    <i class="bi bi-truck"></i>
-                                                </a>
-                                            }
-                                        </div>
+                                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
                                     </td>
                                 </tr>
                             }
@@ -131,9 +91,9 @@
                         else
                         {
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
+                                <td colspan="5" class="text-center py-4">
                                     <i class="bi bi-inbox fs-1"></i>
-                                    <p class="mb-0">No outbound orders found</p>
+                                    <p>No outbound orders found</p>
                                 </td>
                             </tr>
                         }
@@ -143,25 +103,19 @@
 
             @if (Model.TotalPages > 1)
             {
-                <nav aria-label="Page navigation" class="mt-3">
+                <nav class="mt-3">
                     <ul class="pagination justify-content-center">
                         <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
-                            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)" asp-route-searchTerm="@ViewBag.SearchTerm" asp-route-status="@ViewBag.StatusFilter">
-                                Previous
-                            </a>
+                            <a class="page-link" asp-route-pageNumber="@(Model.CurrentPage - 1)">Previous</a>
                         </li>
                         @for (int i = 1; i <= Model.TotalPages; i++)
                         {
                             <li class="page-item @(Model.CurrentPage == i ? "active" : "")">
-                                <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-searchTerm="@ViewBag.SearchTerm" asp-route-status="@ViewBag.StatusFilter">
-                                    @i
-                                </a>
+                                <a class="page-link" asp-route-pageNumber="@i">@i</a>
                             </li>
                         }
                         <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
-                            <a class="page-link" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)" asp-route-searchTerm="@ViewBag.SearchTerm" asp-route-status="@ViewBag.StatusFilter">
-                                Next
-                            </a>
+                            <a class="page-link" asp-route-pageNumber="@(Model.CurrentPage + 1)">Next</a>
                         </li>
                     </ul>
                 </nav>

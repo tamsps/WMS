@@ -3,9 +3,10 @@
     ViewData["Title"] = "Receive Inbound Order";
     var statusClass = Model.Status switch
     {
-        "Draft" => "bg-secondary",
-        "Receiving" => "bg-info",
-        "Completed" => "bg-success",
+        "Pending" => "bg-secondary",
+        "Received" => "bg-success",
+        "Completed" => "bg-primary",
+        "Cancelled" => "bg-danger",
         _ => "bg-secondary"
     };
 }
@@ -30,6 +31,22 @@
         </div>
     </div>
 
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     @if (!ViewData.ModelState.IsValid)
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -44,7 +61,7 @@
         </div>
     }
 
-    <form asp-action="Receive" method="post" id="receiveForm">
+    <form asp-action="Receive" asp-route-id="@Model.Id" method="post">
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="ReferenceNumber" />
         <input type="hidden" asp-for="SupplierName" />
@@ -83,7 +100,7 @@
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i>
-                            Enter the actual quantity received for each item. You can receive partial quantities if needed.
+                            Enter the quantity received for each item. The inventory will be updated when you submit.
                         </div>
 
                         <div class="table-responsive">
@@ -92,10 +109,11 @@
                                     <tr>
                                         <th style="width: 25%;">Product</th>
                                         <th style="width: 20%;">Location</th>
-                                        <th class="text-center" style="width: 15%;">Expected</th>
-                                        <th class="text-center" style="width: 15%;">Previously Received</th>
+                                        <th class="text-center" style="width: 12%;">Expected</th>
+                                        <th class="text-center" style="width: 12%;">Already Received</th>
                                         <th class="text-center" style="width: 15%;">Receive Now</th>
-                                        <th class="text-center" style="width: 10%;">Total</th>
+                                        <th class="text-center" style="width: 8%;">UOM</th>
+                                        <th style="width: 8%;">Notes</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -103,9 +121,8 @@
                                     {
                                         var item = Model.Items[i];
                                         var remaining = item.ExpectedQuantity - item.ReceivedQuantity;
-                                        var rowClass = item.ReceivedQuantity >= item.ExpectedQuantity ? "table-success" : "";
                                         
-                                        <tr class="@rowClass">
+                                        <tr>
                                             <td>
                                                 <div class="fw-bold">@item.ProductName</div>
                                                 <small class="text-muted">SKU: @item.ProductSku</small>
@@ -115,7 +132,8 @@
                                                 <input type="hidden" name="Items[@i].ProductSku" value="@item.ProductSku" />
                                             </td>
                                             <td>
-                                                @item.LocationName
+                                                <div class="fw-bold">@item.LocationName</div>
+                                                <small class="text-muted">@item.LocationCode</small>
                                                 <input type="hidden" name="Items[@i].LocationId" value="@item.LocationId" />
                                                 <input type="hidden" name="Items[@i].LocationName" value="@item.LocationName" />
                                                 <input type="hidden" name="Items[@i].LocationCode" value="@item.LocationCode" />
@@ -125,54 +143,39 @@
                                                 <input type="hidden" name="Items[@i].ExpectedQuantity" value="@item.ExpectedQuantity" />
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge bg-info">@item.ReceivedQuantity</span>
-                                                <input type="hidden" name="Items[@i].ReceivedQuantity" value="@item.ReceivedQuantity" />
-                                            </td>
-                                            <td>
-                                                <div class="input-group input-group-sm">
-                                                    <button type="button" class="btn btn-outline-secondary" onclick="decrementQuantity(@i)">
-                                                        <i class="bi bi-dash"></i>
-                                                    </button>
-                                                    <input type="number" 
-                                                           class="form-control text-center receive-quantity-input" 
-                                                           name="Items[@i].QuantityToReceive" 
-                                                           id="quantity_@i"
-                                                           value="@remaining" 
-                                                           min="0" 
-                                                           max="@remaining"
-                                                           onchange="updateTotals()"
-                                                           style="max-width: 80px;" />
-                                                    <button type="button" class="btn btn-outline-secondary" onclick="incrementQuantity(@i, @remaining)">
-                                                        <i class="bi bi-plus"></i>
-                                                    </button>
-                                                </div>
-                                                @if (remaining > 0)
+                                                @if (item.ReceivedQuantity > 0)
                                                 {
-                                                    <small class="text-muted d-block text-center mt-1">
-                                                        Remaining: @remaining
-                                                    </small>
+                                                    <span class="badge bg-success">@item.ReceivedQuantity</span>
                                                 }
                                                 else
                                                 {
-                                                    <small class="text-success d-block text-center mt-1">
-                                                        <i class="bi bi-check-circle"></i> Complete
-                                                    </small>
+                                                    <span class="badge bg-light text-dark">0</span>
                                                 }
+                                                <input type="hidden" name="Items[@i].ReceivedQuantity" value="@item.ReceivedQuantity" />
+                                            </td>
+                                            <td>
+                                                <input type="number" 
+                                                       class="form-control text-center" 
+                                                       name="Items[@i].QuantityToReceive" 
+                                                       value="@remaining" 
+                                                       min="0" 
+                                                       step="0.01" />
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge bg-primary" id="total_@i">
-                                                    @(item.ReceivedQuantity + remaining)
-                                                </span>
+                                                <span class="badge bg-secondary">@item.UOM</span>
+                                                <input type="hidden" name="Items[@i].UOM" value="@item.UOM" />
+                                            </td>
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control form-control-sm" 
+                                                       name="Items[@i].Notes" 
+                                                       value="@item.Notes"
+                                                       placeholder="Notes" />
                                             </td>
                                         </tr>
                                     }
                                 </tbody>
                             </table>
-                        </div>
-
-                        <div class="mt-3">
-                            <label asp-for="Notes" class="form-label">Receiving Notes</label>
-                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Enter any notes about this receiving session (e.g., damaged items, discrepancies, etc.)"></textarea>
                         </div>
                     </div>
                 </div>
@@ -180,7 +183,7 @@
 
             <div class="col-lg-4">
                 <div class="card mb-4 sticky-top" style="top: 20px;">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-success text-white">
                         <h5 class="card-title mb-0">Receiving Summary</h5>
                     </div>
                     <div class="card-body">
@@ -189,36 +192,31 @@
                             <span class="fw-bold">@Model.Items.Count</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Expected Quantity:</span>
+                            <span>Total Expected:</span>
                             <span class="fw-bold">@Model.Items.Sum(i => i.ExpectedQuantity)</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Previously Received:</span>
-                            <span class="fw-bold text-info">@Model.Items.Sum(i => i.ReceivedQuantity)</span>
+                            <span>Already Received:</span>
+                            <span class="fw-bold text-success">@Model.Items.Sum(i => i.ReceivedQuantity)</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Receiving Now:</span>
-                            <span class="fw-bold text-success" id="receivingNow">
-                                @Model.Items.Sum(i => i.ExpectedQuantity - i.ReceivedQuantity)
-                            </span>
+                            <span>Remaining:</span>
+                            <span class="fw-bold text-warning">@(Model.Items.Sum(i => i.ExpectedQuantity) - Model.Items.Sum(i => i.ReceivedQuantity))</span>
                         </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span class="fw-bold">Total After Receiving:</span>
-                            <span class="fw-bold text-primary" id="totalAfter">
-                                @Model.Items.Sum(i => i.ExpectedQuantity)
-                            </span>
-                        </div>
+                        <hr />
+                        
+                        @if (!string.IsNullOrEmpty(Model.Notes))
+                        {
+                            <div class="mb-3">
+                                <label class="text-muted small">Order Notes</label>
+                                <div class="small">@Model.Notes</div>
+                            </div>
+                            <hr />
+                        }
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-box-arrow-in-down"></i> Save Receiving
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="fillAll()">
-                                <i class="bi bi-clipboard-check"></i> Fill All Remaining
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="clearAll()">
-                                <i class="bi bi-x-circle"></i> Clear All
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-box-seam"></i> Receive Items
                             </button>
                             <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
                                 Cancel
@@ -233,80 +231,4 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    
-    <script>
-        function incrementQuantity(index, max) {
-            const input = document.getElementById('quantity_' + index);
-            const currentValue = parseInt(input.value) || 0;
-            if (currentValue < max) {
-                input.value = currentValue + 1;
-                updateTotals();
-            }
-        }
-
-        function decrementQuantity(index) {
-            const input = document.getElementById('quantity_' + index);
-            const currentValue = parseInt(input.value) || 0;
-            if (currentValue > 0) {
-                input.value = currentValue - 1;
-                updateTotals();
-            }
-        }
-
-        function updateTotals() {
-            let receivingNow = 0;
-            const inputs = document.querySelectorAll('.receive-quantity-input');
-            
-            inputs.forEach((input, index) => {
-                const quantity = parseInt(input.value) || 0;
-                receivingNow += quantity;
-                
-                // Update individual total
-                const previouslyReceived = parseInt(input.getAttribute('data-received') || document.querySelector(`input[name="Items[${index}].ReceivedQuantity"]`).value);
-                const total = previouslyReceived + quantity;
-                document.getElementById('total_' + index).textContent = total;
-            });
-            
-            document.getElementById('receivingNow').textContent = receivingNow;
-            
-            // Calculate total after
-            const expected = @Model.Items.Sum(i => i.ExpectedQuantity);
-            const previouslyReceived = @Model.Items.Sum(i => i.ReceivedQuantity);
-            const totalAfter = previouslyReceived + receivingNow;
-            document.getElementById('totalAfter').textContent = totalAfter;
-        }
-
-        function fillAll() {
-            const inputs = document.querySelectorAll('.receive-quantity-input');
-            inputs.forEach(input => {
-                const max = parseInt(input.getAttribute('max'));
-                input.value = max;
-            });
-            updateTotals();
-        }
-
-        function clearAll() {
-            const inputs = document.querySelectorAll('.receive-quantity-input');
-            inputs.forEach(input => {
-                input.value = 0;
-            });
-            updateTotals();
-        }
-
-        // Form validation
-        document.getElementById('receiveForm').addEventListener('submit', function(e) {
-            const inputs = document.querySelectorAll('.receive-quantity-input');
-            let totalReceiving = 0;
-            
-            inputs.forEach(input => {
-                totalReceiving += parseInt(input.value) || 0;
-            });
-            
-            if (totalReceiving === 0) {
-                e.preventDefault();
-                alert('Please enter at least one quantity to receive.');
-                return false;
-            }
-        });
-    </script>
 }

@@ -1,12 +1,12 @@
-@model WMS.Web.Models.OutboundViewModel
+@model WMS.Web.Models.PickOutboundViewModel
 @{
-    ViewData["Title"] = "Ship Outbound Order";
+    ViewData["Title"] = "Pick Outbound Order";
     var statusClass = Model.Status switch
     {
         "Pending" => "bg-secondary",
-        "Picking" => "bg-warning",
-        "Picked" => "bg-info",
-        "Shipped" => "bg-success",
+        "Picking" => "bg-info",
+        "Picked" => "bg-success",
+        "Shipped" => "bg-primary",
         _ => "bg-secondary"
     };
 }
@@ -14,13 +14,13 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1">Ship Outbound Order</h2>
+            <h2 class="mb-1">Pick Outbound Order</h2>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
                     <li class="breadcrumb-item"><a asp-controller="Outbound" asp-action="Index">Outbound Orders</a></li>
                     <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.Id">@Model.OutboundNumber</a></li>
-                    <li class="breadcrumb-item active">Ship</li>
+                    <li class="breadcrumb-item active">Pick</li>
                 </ol>
             </nav>
         </div>
@@ -31,24 +31,26 @@
         </div>
     </div>
 
-    @if (TempData["ErrorMessage"] != null)
+    @if (!ViewData.ModelState.IsValid)
     {
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
+            <strong>Please correct the following errors:</strong>
+            <ul class="mb-0">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-
-    <form asp-action="Ship" asp-route-id="@Model.Id" method="post">
-        <input type="hidden" name="Id" value="@Model.Id" />
+    <form asp-action="Pick" method="post" id="pickOutboundForm">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="OutboundNumber" />
+        <input type="hidden" asp-for="OrderNumber" />
+        <input type="hidden" asp-for="CustomerName" />
+        <input type="hidden" asp-for="Status" />
 
         <div class="row">
             <div class="col-lg-8">
@@ -58,30 +60,19 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label class="text-muted small">Outbound Number</label>
                                 <div class="fw-bold">@Model.OutboundNumber</div>
                             </div>
-                            <div class="col-md-3">
-                                <label class="text-muted small">Order Number</label>
-                                <div class="fw-bold">@(Model.OrderNumber ?? "-")</div>
-                            </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label class="text-muted small">Customer</label>
                                 <div class="fw-bold">@Model.CustomerName</div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label class="text-muted small">Status</label>
                                 <div>
                                     <span class="badge @statusClass">@Model.Status</span>
                                 </div>
-                            </div>
-                        </div>
-                        <hr />
-                        <div class="row">
-                            <div class="col-12">
-                                <label class="text-muted small">Shipping Address</label>
-                                <div class="fw-bold">@(Model.ShippingAddress ?? "Not specified")</div>
                             </div>
                         </div>
                     </div>
@@ -89,52 +80,83 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Items to Ship</h5>
+                        <h5 class="card-title mb-0">Pick Items</h5>
                     </div>
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i>
-                            Review the items below. Clicking "Ship Order" will deduct inventory and mark the order as shipped.
+                            Enter the quantity to pick for each item. Leave blank to pick the full ordered quantity.
                         </div>
 
                         <div class="table-responsive">
                             <table class="table table-bordered">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 30%;">Product</th>
+                                        <th style="width: 25%;">Product</th>
                                         <th style="width: 20%;">Location</th>
                                         <th class="text-center" style="width: 15%;">Ordered</th>
-                                        <th class="text-center" style="width: 15%;">Picked</th>
+                                        <th class="text-center" style="width: 15%;">Available</th>
+                                        <th class="text-center" style="width: 15%;">Pick Quantity</th>
                                         <th class="text-center" style="width: 10%;">UOM</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var item in Model.Items)
+                                    @for (int i = 0; i < Model.Items.Count; i++)
                                     {
-                                        <tr>
+                                        var item = Model.Items[i];
+                                        var canPick = item.AvailableQuantity >= item.OrderedQuantity;
+                                        var rowClass = canPick ? "" : "table-warning";
+                                        
+                                        <tr class="@rowClass">
                                             <td>
                                                 <div class="fw-bold">@item.ProductName</div>
                                                 <small class="text-muted">SKU: @item.ProductSku</small>
+                                                <input type="hidden" name="Items[@i].ItemId" value="@item.ItemId" />
+                                                <input type="hidden" name="Items[@i].ProductId" value="@item.ProductId" />
+                                                <input type="hidden" name="Items[@i].ProductName" value="@item.ProductName" />
+                                                <input type="hidden" name="Items[@i].ProductSku" value="@item.ProductSku" />
                                             </td>
                                             <td>
                                                 <div class="fw-bold">@item.LocationName</div>
                                                 <small class="text-muted">@item.LocationCode</small>
+                                                <input type="hidden" name="Items[@i].LocationId" value="@item.LocationId" />
+                                                <input type="hidden" name="Items[@i].LocationName" value="@item.LocationName" />
+                                                <input type="hidden" name="Items[@i].LocationCode" value="@item.LocationCode" />
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge bg-secondary">@item.OrderedQuantity</span>
+                                                <input type="hidden" name="Items[@i].OrderedQuantity" value="@item.OrderedQuantity" />
                                             </td>
                                             <td class="text-center">
-                                                @if (item.PickedQuantity > 0)
+                                                @if (canPick)
                                                 {
-                                                    <span class="badge bg-success">@item.PickedQuantity</span>
+                                                    <span class="badge bg-success">@item.AvailableQuantity</span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge bg-warning text-dark">0</span>
+                                                    <span class="badge bg-warning text-dark">@item.AvailableQuantity</span>
+                                                }
+                                                <input type="hidden" name="Items[@i].AvailableQuantity" value="@item.AvailableQuantity" />
+                                            </td>
+                                            <td>
+                                                <input type="number" 
+                                                       class="form-control text-center" 
+                                                       name="Items[@i].QuantityToPick" 
+                                                       value="@Math.Min(item.OrderedQuantity, item.AvailableQuantity)" 
+                                                       min="0" 
+                                                       max="@item.AvailableQuantity"
+                                                       step="0.01"
+                                                       placeholder="@item.OrderedQuantity" />
+                                                @if (!canPick)
+                                                {
+                                                    <small class="text-warning d-block text-center mt-1">
+                                                        <i class="bi bi-exclamation-triangle"></i> Insufficient stock!
+                                                    </small>
                                                 }
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge bg-secondary">@item.UOM</span>
+                                                <input type="hidden" name="Items[@i].UOM" value="@item.UOM" />
                                             </td>
                                         </tr>
                                     }
@@ -148,7 +170,7 @@
             <div class="col-lg-4">
                 <div class="card mb-4 sticky-top" style="top: 20px;">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="card-title mb-0">Shipping Summary</h5>
+                        <h5 class="card-title mb-0">Picking Summary</h5>
                     </div>
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-2">
@@ -156,45 +178,27 @@
                             <span class="fw-bold">@Model.Items.Count</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Total Ordered:</span>
+                            <span>Ordered Quantity:</span>
                             <span class="fw-bold">@Model.Items.Sum(i => i.OrderedQuantity)</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Total Picked:</span>
-                            <span class="fw-bold text-success">@Model.Items.Sum(i => i.PickedQuantity)</span>
+                            <span>Available Quantity:</span>
+                            <span class="fw-bold">@Model.Items.Sum(i => i.AvailableQuantity)</span>
                         </div>
-                        <hr />
+                        <hr>
 
-                        @if (Model.Status != "Picked")
+                        @if (Model.Items.Any(i => i.AvailableQuantity < i.OrderedQuantity))
                         {
                             <div class="alert alert-warning mb-3">
                                 <i class="bi bi-exclamation-triangle"></i>
-                                <small>Order must be in "Picked" status to ship.</small>
+                                <small>Some items have insufficient inventory!</small>
                             </div>
-                        }
-
-                        @if (!string.IsNullOrEmpty(Model.Notes))
-                        {
-                            <div class="mb-3">
-                                <label class="text-muted small">Order Notes</label>
-                                <div class="small">@Model.Notes</div>
-                            </div>
-                            <hr />
                         }
 
                         <div class="d-grid gap-2">
-                            @if (Model.Status == "Picked")
-                            {
-                                <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="bi bi-truck"></i> Ship Order
-                                </button>
-                            }
-                            else
-                            {
-                                <button type="button" class="btn btn-secondary btn-lg" disabled>
-                                    <i class="bi bi-truck"></i> Ship Order
-                                </button>
-                            }
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-seam"></i> Save Picking
+                            </button>
                             <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
                                 Cancel
                             </a>

@@ -26,12 +26,19 @@ public class OutboundItemDto
     public string ProductName { get; set; } = string.Empty;
     public Guid LocationId { get; set; }
     public string LocationCode { get; set; } = string.Empty;
+    public string LocationName { get; set; } = string.Empty;
     public decimal OrderedQuantity { get; set; }
     public decimal PickedQuantity { get; set; }
     public decimal ShippedQuantity { get; set; }
+    /// <summary>
+    /// Available quantity from inventory (QuantityOnHand - QuantityReserved)
+    /// Used by Pick UI to show how much can be picked
+    /// </summary>
+    public decimal AvailableQuantity { get; set; }
     public string? LotNumber { get; set; }
     public string? SerialNumber { get; set; }
     public string? Notes { get; set; }
+    public string UOM { get; set; } = string.Empty;
 }
 
 public class CreateOutboundDto

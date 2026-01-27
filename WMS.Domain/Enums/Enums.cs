@@ -11,7 +11,9 @@ public enum TransactionType
     Inbound = 1,
     Outbound = 2,
     Adjustment = 3,
-    Return = 4
+    Return = 4,
+    Reserve = 5,      // For Pick operation - reserves inventory
+    Unreserve = 6     // For Pick cancellation - unreserves inventory
 }
 
 public enum PaymentStatus

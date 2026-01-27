@@ -64,7 +64,7 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label asp-for="ShippingAddress" class="form-label">Shipping Address <span class="text-danger">*</span></label>
+                            <label asp-for="ShippingAddress" class="form-label">Shipping Address</label>
                             <textarea asp-for="ShippingAddress" class="form-control" rows="3" placeholder="Enter complete shipping address..."></textarea>
                             <span asp-validation-for="ShippingAddress" class="text-danger"></span>
                         </div>
@@ -127,7 +127,6 @@
     </form>
 </div>
 
-<!-- Item Template (hidden) -->
 <template id="itemTemplate">
     <div class="item-row border rounded p-3 mb-3">
         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -145,10 +144,100 @@
                     {
                         foreach (var product in (List<ProductViewModel>)ViewBag.Products)
                         {
-                            <option value="@product.Id" data-sku="@product.SKU">@product.Name (@product.SKU)</option>
+                            <option value="@product.Id">@product.Name (@product.SKU)</option>
                         }
                     }
                 </select>
             </div>
             <div class="col-md-6 mb-3">
-                <label class="form-label
+                <label class="form-label">Location <span class="text-danger">*</span></label>
+                <select class="form-select location-select" name="Items[INDEX].LocationId" required>
+                    <option value="">Select location...</option>
+                    @if (ViewBag.Locations != null)
+                    {
+                        foreach (var location in (List<LocationViewModel>)ViewBag.Locations)
+                        {
+                            <option value="@location.Id">@location.Name (@location.Code)</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Ordered Quantity <span class="text-danger">*</span></label>
+                <input type="number" class="form-control quantity-input" name="Items[INDEX].OrderedQuantity" min="1" step="0.01" required onchange="updateSummary()" placeholder="0" />
+            </div>
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let itemIndex = 0;
+        function addItem() {
+            const template = document.getElementById('itemTemplate');
+            const clone = template.content.cloneNode(true);
+            clone.querySelectorAll('[name*="INDEX"]').forEach(el => {
+                el.name = el.name.replace('INDEX', itemIndex);
+            });
+            clone.querySelector('.item-number').textContent = '#' + (itemIndex + 1);
+            document.getElementById('itemsContainer').appendChild(clone);
+            document.getElementById('noItemsMessage').style.display = 'none';
+            itemIndex++;
+            updateSummary();
+        }
+        function removeItem(button) {
+            const itemRow = button.closest('.item-row');
+            itemRow.remove();
+            const items = document.querySelectorAll('.item-row');
+            items.forEach((item, index) => {
+                item.querySelector('.item-number').textContent = '#' + (index + 1);
+                item.querySelectorAll('[name*="Items["]').forEach(el => {
+                    el.name = el.name.replace(/Items\[\d+\]/, 'Items[' + index + ']');
+                });
+            });
+            itemIndex = items.length;
+            if (itemIndex === 0) {
+                document.getElementById('noItemsMessage').style.display = 'block';
+            }
+            updateSummary();
+        }
+        function updateSummary() {
+            const items = document.querySelectorAll('.item-row');
+            let totalQuantity = 0;
+            items.forEach(item => {
+                const quantity = parseFloat(item.querySelector('.quantity-input').value) || 0;
+                totalQuantity += quantity;
+            });
+            document.getElementById('totalItems').textContent = items.length;
+            document.getElementById('totalQuantity').textContent = totalQuantity.toFixed(2);
+        }
+        document.getElementById('createOutboundForm').addEventListener('submit', function(e) {
+            const items = document.querySelectorAll('.item-row');
+            if (items.length === 0) {
+                e.preventDefault();
+                alert('Please add at least one item to the order.');
+                return false;
+            }
+            let isValid = true;
+            items.forEach(item => {
+                const productId = item.querySelector('.product-select').value;
+                const locationId = item.querySelector('.location-select').value;
+                const quantity = item.querySelector('.quantity-input').value;
+                if (!productId || !locationId || !quantity || quantity <= 0) {
+                    isValid = false;
+                }
+            });
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields for each item.');
+                return false;
+            }
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            addItem();
+        });
+    </script>
+}

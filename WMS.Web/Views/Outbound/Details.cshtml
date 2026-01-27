@@ -3,9 +3,10 @@
     ViewData["Title"] = "Outbound Order Details";
     var statusClass = Model.Status switch
     {
-        "Draft" => "bg-secondary",
+        "Pending" => "bg-secondary",
         "Picking" => "bg-warning",
         "Picked" => "bg-info",
+        "Packed" => "bg-primary",
         "Shipped" => "bg-success",
         "Cancelled" => "bg-danger",
         _ => "bg-secondary"
@@ -20,7 +21,7 @@
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
                     <li class="breadcrumb-item"><a asp-controller="Outbound" asp-action="Index">Outbound Orders</a></li>
-                    <li class="breadcrumb-item active">@Model.ReferenceNumber</li>
+                    <li class="breadcrumb-item active">@Model.OutboundNumber</li>
                 </ol>
             </nav>
         </div>
@@ -28,7 +29,13 @@
             <a asp-action="Index" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to List
             </a>
-            @if (Model.Status == "Draft" || Model.Status == "Picking" || Model.Status == "Picked")
+            @if (Model.Status == "Pending")
+            {
+                <a asp-action="Pick" asp-route-id="@Model.Id" class="btn btn-info">
+                    <i class="bi bi-box-seam"></i> Pick Items
+                </a>
+            }
+            @if (Model.Status == "Picked" || Model.Status == "Packed")
             {
                 <a asp-action="Ship" asp-route-id="@Model.Id" class="btn btn-success">
                     <i class="bi bi-truck"></i> Ship Order
@@ -36,7 +43,7 @@
             }
             @if (Model.Status != "Shipped" && Model.Status != "Cancelled")
             {
-                <button type="button" class="btn btn-danger" onclick="confirmCancel(@Model.Id)">
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
                     <i class="bi bi-x-circle"></i> Cancel Order
                 </button>
             }
@@ -51,213 +58,16 @@
         </div>
     }
 
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="row">
         <div class="col-lg-8">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Order Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="text-muted small">Reference Number</label>
-                            <div class="fw-bold">@Model.ReferenceNumber</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Status</label>
-                            <div>
-                                <span class="badge @statusClass fs-6">@Model.Status</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="text-muted small">Customer</label>
-                            <div class="fw-bold">@Model.CustomerName</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="text-muted small">Order Date</label>
-                            <div>@Model.OrderDate.ToString("MMM dd, yyyy")</div>
-                        </div>
-                    </div>
-                    @if (Model.ShippedDate.HasValue)
-                    {
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="text-muted small">Shipped Date</label>
-                                <div>@Model.ShippedDate.Value.ToString("MMM dd, yyyy HH:mm")</div>
-                            </div>
-                            @if (!string.IsNullOrEmpty(Model.TrackingNumber))
-                            {
-                                <div class="col-md-6">
-                                    <label class="text-muted small">Tracking Number</label>
-                                    <div class="fw-bold"><code>@Model.TrackingNumber</code></div>
-                                </div>
-                            }
-                        </div>
-                    }
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="text-muted small">Shipping Address</label>
-                            <div>@Model.ShippingAddress</div>
-                        </div>
-                    </div>
-                    @if (!string.IsNullOrEmpty(Model.Notes))
-                    {
-                        <div class="row">
-                            <div class="col-12">
-                                <label class="text-muted small">Notes</label>
-                                <div>@Model.Notes</div>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Items</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th>SKU</th>
-                                    <th>Location</th>
-                                    <th class="text-end">Ordered</th>
-                                    <th class="text-end">Picked</th>
-                                    <th class="text-end">Progress</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var item in Model.Items)
-                                {
-                                    var progress = item.OrderedQuantity > 0 ? (int)((item.PickedQuantity / (decimal)item.OrderedQuantity) * 100) : 0;
-                                    var progressClass = progress >= 100 ? "bg-success" : progress > 0 ? "bg-warning" : "bg-secondary";
-                                    var rowClass = progress >= 100 ? "table-success" : "";
-                                    
-                                    <tr class="@rowClass">
-                                        <td>@item.ProductName</td>
-                                        <td><code>@item.ProductSku</code></td>
-                                        <td>@item.LocationName</td>
-                                        <td class="text-end">@item.OrderedQuantity</td>
-                                        <td class="text-end fw-bold">@item.PickedQuantity</td>
-                                        <td class="text-end">
-                                            <div class="d-flex align-items-center justify-content-end">
-                                                <div class="progress flex-grow-1 me-2" style="height: 20px; max-width: 100px;">
-                                                    <div class="progress-bar @progressClass" role="progressbar" style="width: @progress%" aria-valuenow="@progress" aria-valuemin="0" aria-valuemax="100">
-                                                        @if (progress > 15)
-                                                        {
-                                                            <span>@progress%</span>
-                                                        }
-                                                    </div>
-                                                </div>
-                                                @if (progress < 15)
-                                                {
-                                                    <small class="text-muted">@progress%</small>
-                                                }
-                                                else if (progress >= 100)
-                                                {
-                                                    <i class="bi bi-check-circle-fill text-success"></i>
-                                                }
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Summary</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Total Items:</span>
-                        <span class="fw-bold">@Model.Items.Count</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Ordered Quantity:</span>
-                        <span class="fw-bold">@Model.Items.Sum(i => i.OrderedQuantity)</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Picked Quantity:</span>
-                        <span class="fw-bold text-success">@Model.Items.Sum(i => i.PickedQuantity)</span>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted">Overall Progress:</span>
-                        <span class="fw-bold">
-                            @{
-                                var totalOrdered = Model.Items.Sum(i => i.OrderedQuantity);
-                                var totalPicked = Model.Items.Sum(i => i.PickedQuantity);
-                                var overallProgress = totalOrdered > 0 ? (int)((totalPicked / (decimal)totalOrdered) * 100) : 0;
-                            }
-                            @overallProgress%
-                        </span>
-                    </div>
-                    <div class="progress mt-2" style="height: 25px;">
-                        <div class="progress-bar @(overallProgress >= 100 ? "bg-success" : overallProgress > 0 ? "bg-warning" : "bg-secondary")" role="progressbar" style="width: @overallProgress%" aria-valuenow="@overallProgress" aria-valuemin="0" aria-valuemax="100">
-                            @overallProgress%
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Audit Information</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="text-muted small">Created By</label>
-                        <div>@Model.CreatedBy</div>
-                        <small class="text-muted">@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")</small>
-                    </div>
-                    @if (Model.UpdatedAt.HasValue)
-                    {
-                        <div>
-                            <label class="text-muted small">Last Updated By</label>
-                            <div>@Model.UpdatedBy</div>
-                            <small class="text-muted">@Model.UpdatedAt.Value.ToString("MMM dd, yyyy HH:mm")</small>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-    <script>
-        function confirmCancel(id) {
-            if (confirm('Are you sure you want to cancel this order? This action cannot be undone.')) {
-                fetch('@Url.Action("Cancel", "Outbound")/' + id, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
-                    }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        window.location.reload();
-                    } else {
-                        alert('Failed to cancel order. Please try again.');
-                    }
-                })
-                .catch(error => {
-                    alert('An error occurred. Please try again.');
-                    console.error('Error:', error);
-                });
-            }
-        }
-    </script>
-}
+                    <h5 class="card-title
