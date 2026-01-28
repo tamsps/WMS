@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace WMS.Web.Models
 {
@@ -16,19 +17,25 @@ namespace WMS.Web.Models
     public class InboundViewModel
     {
         public Guid Id { get; set; }
+        public string InboundNumber { get; set; } = string.Empty;
         public string ReferenceNumber { get; set; } = string.Empty;
         public string SupplierName { get; set; } = string.Empty;
+        public string? SupplierCode { get; set; }
         public string Status { get; set; } = string.Empty;
         public DateTime ExpectedDate { get; set; }
         public DateTime? ReceivedDate { get; set; }
-        public int TotalItems { get; set; }
-        public int ReceivedItems { get; set; }
         public string? Notes { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string? UpdatedBy { get; set; }
         public List<InboundItemViewModel> Items { get; set; } = new();
+
+        // Calculated properties based on Items list
+        public int TotalItems => Items?.Count ?? 0;
+        public int ReceivedItems => Items?.Count(i => i.ReceivedQuantity > 0) ?? 0;
+        public decimal TotalExpectedQuantity => Items?.Sum(i => i.ExpectedQuantity) ?? 0;
+        public decimal TotalReceivedQuantity => Items?.Sum(i => i.ReceivedQuantity) ?? 0;
     }
 
     public class InboundItemViewModel
@@ -36,13 +43,17 @@ namespace WMS.Web.Models
         public Guid Id { get; set; }
         public Guid InboundId { get; set; }
         public Guid ProductId { get; set; }
-        public string ProductSku { get; set; } = string.Empty;
+        public string ProductSKU { get; set; } = string.Empty;
+        public string ProductSku { get; set; } = string.Empty; // Alias for API compatibility
         public string ProductName { get; set; } = string.Empty;
         public Guid LocationId { get; set; }
         public string LocationCode { get; set; } = string.Empty;
         public string LocationName { get; set; } = string.Empty;
         public decimal ExpectedQuantity { get; set; }
         public decimal ReceivedQuantity { get; set; }
+        public decimal? DamagedQuantity { get; set; }
+        public string? LotNumber { get; set; }
+        public DateTime? ExpiryDate { get; set; }
         public string UOM { get; set; } = string.Empty;
         public string? Notes { get; set; }
     }

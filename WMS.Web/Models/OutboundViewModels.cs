@@ -17,22 +17,30 @@ namespace WMS.Web.Models
     {
         public Guid Id { get; set; }
         public string ReferenceNumber { get; set; } = string.Empty;
-        public string OutboundNumber { get; set; } = string.Empty;  // Added
-        public string? OrderNumber { get; set; }  // Added
+        public string OutboundNumber { get; set; } = string.Empty;
+        public string? OrderNumber { get; set; }
         public string CustomerName { get; set; } = string.Empty;
+        public string? CustomerCode { get; set; }
         public string Status { get; set; } = string.Empty;
         public DateTime OrderDate { get; set; }
-        public DateTime? ShippedDate { get; set; }
+        public DateTime? ShipDate { get; set; }
+        public DateTime? ShippedDate { get; set; }  // Alias for ShipDate
         public string? TrackingNumber { get; set; }
-        public int TotalItems { get; set; }
-        public int PickedItems { get; set; }
         public string? ShippingAddress { get; set; }
         public string? Notes { get; set; }
+        public Guid? PaymentId { get; set; }
+        public string? PaymentStatus { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string? UpdatedBy { get; set; }
         public List<OutboundItemViewModel> Items { get; set; } = new();
+        
+        // Calculated properties based on Items list
+        public int TotalItems => Items?.Count ?? 0;
+        public int PickedItems => Items?.Count(i => i.PickedQuantity > 0) ?? 0;
+        public decimal TotalOrderedQuantity => Items?.Sum(i => i.OrderedQuantity) ?? 0;
+        public decimal TotalPickedQuantity => Items?.Sum(i => i.PickedQuantity) ?? 0;
     }
 
     public class OutboundItemViewModel
@@ -40,15 +48,20 @@ namespace WMS.Web.Models
         public Guid Id { get; set; }
         public Guid OutboundId { get; set; }
         public Guid ProductId { get; set; }
-        public string ProductSku { get; set; } = string.Empty;
+        public string ProductSKU { get; set; } = string.Empty;
+        public string ProductSku { get; set; } = string.Empty; // Alias for API compatibility
         public string ProductName { get; set; } = string.Empty;
         public Guid LocationId { get; set; }
         public string LocationCode { get; set; } = string.Empty;
         public string LocationName { get; set; } = string.Empty;
         public decimal OrderedQuantity { get; set; }
         public decimal PickedQuantity { get; set; }
-        public decimal AvailableQuantity { get; set; }  // Added
+        public decimal ShippedQuantity { get; set; }
+        public decimal AvailableQuantity { get; set; }
+        public string? LotNumber { get; set; }
+        public string? SerialNumber { get; set; }
         public string UOM { get; set; } = string.Empty;
+        public string? Notes { get; set; }
     }
 
     public class CreateOutboundViewModel
