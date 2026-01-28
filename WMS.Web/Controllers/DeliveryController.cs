@@ -77,6 +77,10 @@ namespace WMS.Web.Controllers
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
                 return RedirectToAction("Login", "Account");
+
+            // Load shipped outbounds for the dropdown
+            LoadShippedOutbounds();
+
             return View(new CreateDeliveryViewModel());
         }
 
@@ -88,7 +92,10 @@ namespace WMS.Web.Controllers
                 return RedirectToAction("Login", "Account");
 
             if (!ModelState.IsValid)
+            {
+                LoadShippedOutbounds();
                 return View(model);
+            }
 
             try
             {
@@ -99,12 +106,14 @@ namespace WMS.Web.Controllers
                     return RedirectToAction(nameof(Details), new { id = result.Data?.Id });
                 }
                 TempData["ErrorMessage"] = result?.Message ?? "Failed to create delivery";
+                LoadShippedOutbounds();
                 return View(model);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating delivery");
                 TempData["ErrorMessage"] = "Error creating delivery";
+                LoadShippedOutbounds();
                 return View(model);
             }
         }
@@ -149,6 +158,21 @@ namespace WMS.Web.Controllers
                 _logger.LogError(ex, "Error tracking delivery");
                 TempData["ErrorMessage"] = "Error tracking delivery";
                 return View("TrackNotFound");
+            }
+        }
+
+        private async Task LoadShippedOutbounds()
+        {
+            try
+            {
+                // Load outbounds with status "Shipped" (assuming that's the status that allows delivery)
+                var result = await _apiService.GetAsync<ApiResponse<PagedResult<OutboundViewModel>>>("outbound?pageSize=1000&status=Shipped");
+                ViewBag.Outbounds = result?.Data?.Items ?? new List<OutboundViewModel>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading shipped outbounds");
+                ViewBag.Outbounds = new List<OutboundViewModel>();
             }
         }
     }

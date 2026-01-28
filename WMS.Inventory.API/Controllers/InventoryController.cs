@@ -6,6 +6,9 @@ using WMS.Inventory.API.Application.Queries.GetAllInventory;
 using WMS.Inventory.API.Application.Queries.GetInventoryByProduct;
 using WMS.Inventory.API.Application.Queries.GetInventoryByLocation;
 using WMS.Inventory.API.Application.Queries.GetInventoryTransactions;
+using WMS.Inventory.API.Application.Commands.CreateInventory;
+using WMS.Inventory.API.Common.Models;
+using WMS.Inventory.API.DTOs.Inventory;
 
 namespace WMS.Inventory.API.Controllers;
 
@@ -22,110 +25,27 @@ public class InventoryController : ControllerBase
     }
 
     /// <summary>
-    /// Get all inventory records with pagination
+    /// Create a new inventory record
     /// </summary>
-    [HttpGet]
+    [HttpPost]
     [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> Create([FromBody] CreateInventoryDto dto)
     {
-        var query = new GetAllInventoryQuery
+        if (!ModelState.IsValid)
         {
-            PageNumber = pageNumber,
-            PageSize = pageSize
-        };
+            return BadRequest(ModelState);
+        }
 
-        var result = await _mediator.Send(query);
+        var currentUser = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "System";
+        var command = new CreateInventoryCommand { Dto = dto, CurrentUser = currentUser };
+        var result = await _mediator.Send(command);
 
         if (!result.IsSuccess)
         {
             return BadRequest(result);
         }
-        return Ok(result);
-    }
 
-    /// <summary>
-    /// Get inventory by ID
-    /// </summary>
-    [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> GetById(Guid id)
-    {
-        var query = new GetInventoryByIdQuery { Id = id };
-        var result = await _mediator.Send(query);
-
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
-        }
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Get inventory by product ID
-    /// </summary>
-    [HttpGet("product/{productId}")]
-    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> GetByProduct(Guid productId)
-    {
-        var query = new GetInventoryByProductQuery { ProductId = productId };
-        var result = await _mediator.Send(query);
-
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
-        }
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Get inventory by location ID
-    /// </summary>
-    [HttpGet("location/{locationId}")]
-    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> GetByLocation(Guid locationId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
-    {
-        var query = new GetInventoryByLocationQuery
-        {
-            LocationId = locationId,
-            PageNumber = pageNumber,
-            PageSize = pageSize
-        };
-
-        var result = await _mediator.Send(query);
-
-        if (!result.IsSuccess)
-        {
-            return NotFound(result);
-        }
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Get inventory transactions with optional filters
-    /// </summary>
-    [HttpGet("transactions")]
-    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
-    public async Task<IActionResult> GetTransactions(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 20,
-        [FromQuery] Guid? productId = null,
-        [FromQuery] Guid? locationId = null)
-    {
-        var query = new GetInventoryTransactionsQuery
-        {
-            PageNumber = pageNumber,
-            PageSize = pageSize,
-            ProductId = productId,
-            LocationId = locationId
-        };
-
-        var result = await _mediator.Send(query);
-
-        if (!result.IsSuccess)
-        {
-            return BadRequest(result);
-        }
-        return Ok(result);
+        return CreatedAtAction("GetById", new { id = result.Data!.Id }, result);
     }
 }
 

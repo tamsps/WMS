@@ -37,9 +37,9 @@ public class CreateDeliveryCommandHandler : IRequestHandler<CreateDeliveryComman
             return Result<DeliveryDto>.Failure("Outbound not found");
         }
 
-        if (outbound.Status != OutboundStatus.Shipped && outbound.Status != OutboundStatus.Picked)
+        if (outbound.Status != OutboundStatus.Picked)
         {
-            return Result<DeliveryDto>.Failure($"Cannot create delivery for outbound in {outbound.Status} status");
+            return Result<DeliveryDto>.Failure($"Cannot create delivery for outbound in {outbound.Status} status. Only accept with Pending status");
         }
 
         // Check if delivery already exists for this outbound
