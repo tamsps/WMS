@@ -16,14 +16,22 @@ namespace WMS.Web.Models
     public class InventoryViewModel
     {
         public Guid Id { get; set; }
+
+        [Required(ErrorMessage = "Product is required")]
         public Guid ProductId { get; set; }
+
         public string ProductSKU { get; set; } = string.Empty;
         public string ProductName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Location is required")]
         public Guid LocationId { get; set; }
+
         public string LocationCode { get; set; } = string.Empty;
         public string LocationName { get; set; } = string.Empty;
 
         // Match API DTO properties
+        [Required(ErrorMessage = "Quantity on hand is required")]
+        [Range(0, double.MaxValue, ErrorMessage = "Quantity must be 0 or greater")]
         public decimal QuantityOnHand { get; set; }
         public decimal QuantityReserved { get; set; }
         public decimal QuantityAvailable { get; set; }

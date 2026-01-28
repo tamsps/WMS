@@ -93,6 +93,8 @@
                                 <tr>
                                     <td>
                                         <a asp-action="Details" asp-route-id="@item.Id" class="fw-bold">@item.OutboundNumber</a>
+                                        @* Display OutboundId under the Outbound Number in the same column *@
+                                        <br /><small class="text-muted">ID: @item.Id</small>
                                         @if (!string.IsNullOrEmpty(item.OrderNumber))
                                         {
                                             <br /><small class="text-muted">Ref: @item.OrderNumber</small>

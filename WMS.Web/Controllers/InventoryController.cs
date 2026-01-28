@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using WMS.Web.Models;
 using WMS.Web.Services;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Linq;
 
 namespace WMS.Web.Controllers
 {
@@ -126,6 +128,108 @@ namespace WMS.Web.Controllers
                 _logger.LogError(ex, "Error loading inventory transactions");
                 TempData["ErrorMessage"] = "Error loading inventory transactions";
                 return View(new InventoryTransactionListViewModel());
+            }
+        }
+
+        // GET: Inventory/Create
+        public async Task<IActionResult> Create()
+        {
+            if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
+                return RedirectToAction("Login", "Account");
+
+            try
+            {
+                await LoadProductsAndLocations();
+
+                // If no products or locations were loaded, show a warning so the view can display it
+                var products = ViewBag.Products as IEnumerable<SelectListItem>;
+                var locations = ViewBag.Locations as IEnumerable<SelectListItem>;
+                if ((products == null || !products.Any()) || (locations == null || !locations.Any()))
+                {
+                    TempData["WarningMessage"] = "Products or locations could not be loaded. Please check API connectivity or authentication.";
+                }
+
+                return View(new InventoryViewModel());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading create inventory view");
+                TempData["ErrorMessage"] = "Error preparing create inventory form";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(InventoryViewModel model)
+        {
+            if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
+                return RedirectToAction("Login", "Account");
+
+            if (!ModelState.IsValid)
+            {
+                await LoadProductsAndLocations();
+                return View(model);
+            }
+
+            try
+            {
+                var result = await _apiService.PostAsync<ApiResponse<InventoryViewModel>>("inventory", model);
+                if (result?.IsSuccess == true)
+                {
+                    TempData["SuccessMessage"] = "Inventory record created successfully";
+                    return RedirectToAction(nameof(Details), new { id = result.Data?.Id });
+                }
+                TempData["ErrorMessage"] = result?.Message ?? "Failed to create inventory";
+                await LoadProductsAndLocations();
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating inventory");
+                TempData["ErrorMessage"] = "Error creating inventory";
+                await LoadProductsAndLocations();
+                return View(model);
+            }
+        }
+
+        // Helper to load products and locations as SelectListItems into ViewBag
+        private async Task LoadProductsAndLocations()
+        {
+            try
+            {
+                var productsResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("products?pageSize=1000&isActive=true");
+                var locationsResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1000&isActive=true");
+
+                if (productsResult == null || productsResult.IsSuccess != true || productsResult.Data == null)
+                {
+                    _logger.LogWarning("LoadProductsAndLocations: productsResult is null or unsuccessful");
+                }
+                if (locationsResult == null || locationsResult.IsSuccess != true || locationsResult.Data == null)
+                {
+                    _logger.LogWarning("LoadProductsAndLocations: locationsResult is null or unsuccessful");
+                }
+
+                var productItems = productsResult?.Data?.Items?.Select(p => new SelectListItem
+                {
+                    Value = p.Id.ToString(),
+                    Text = p.Name
+                }) ?? Enumerable.Empty<SelectListItem>();
+
+                var locationItems = locationsResult?.Data?.Items?.Select(l => new SelectListItem
+                {
+                    Value = l.Id.ToString(),
+                    Text = (l.Code ?? "") + " - " + (l.Name ?? "")
+                }) ?? Enumerable.Empty<SelectListItem>();
+
+                ViewBag.Products = productItems;
+                ViewBag.Locations = locationItems;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading products or locations");
+                ViewBag.Products = Enumerable.Empty<SelectListItem>();
+                ViewBag.Locations = Enumerable.Empty<SelectListItem>();
             }
         }
 

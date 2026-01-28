@@ -1,0 +1,167 @@
+@model WMS.Web.Models.InventoryViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    ViewData["Title"] = "Create Inventory";
+    var products = ViewBag.Products as IEnumerable<SelectListItem> ?? new List<SelectListItem>();
+    var locations = ViewBag.Locations as IEnumerable<SelectListItem> ?? new List<SelectListItem>();
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-boxes"></i> Create Inventory Record</h2>
+            <p class="text-muted mb-0">Add stock for a product at a specific location</p>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to List</a>
+        </div>
+    </div>
+
+    @if (TempData["WarningMessage"] != null)
+    {
+        <div class="alert alert-warning">@TempData["WarningMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            @Html.ValidationSummary(true, "", new { @class = "text-danger mb-3" })
+
+            @if (!products.Any())
+            {
+                <div class="alert alert-info">No products were loaded. Ensure the API is reachable and you are authenticated.</div>
+            }
+            @if (!locations.Any())
+            {
+                <div class="alert alert-info">No locations were loaded. Ensure the API is reachable and you are authenticated.</div>
+            }
+
+            <!-- Summary block -->
+            <div class="mb-3 border rounded p-3 bg-light">
+                <h6 class="mb-2">Summary</h6>
+                <div class="row">
+                    <div class="col-md-4"><small class="text-muted">Product</small><div id="summaryProduct" class="fw-bold">-</div></div>
+                    <div class="col-md-4"><small class="text-muted">Location</small><div id="summaryLocation" class="fw-bold">-</div></div>
+                    <div class="col-md-4"><small class="text-muted">Quantity</small><div id="summaryQty" class="fw-bold">-</div></div>
+                </div>
+            </div>
+
+            <form method="post" action="/Inventory/Create" id="createInventoryForm">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label class="form-label">Product <span class="text-danger">*</span></label>
+                    @Html.DropDownList("ProductId", products, "Select product...", new { @class = "form-select", required = "required" })
+                    @Html.ValidationMessageFor(m => m.ProductId, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Location <span class="text-danger">*</span></label>
+                    @Html.DropDownList("LocationId", locations, "Select location...", new { @class = "form-select", required = "required" })
+                    @Html.ValidationMessageFor(m => m.LocationId, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Quantity On Hand <span class="text-danger">*</span></label>
+                    @Html.TextBoxFor(m => m.QuantityOnHand, new { @class = "form-control", type = "number", step = "0.01", min = "0", required = "required" })
+                    @Html.ValidationMessageFor(m => m.QuantityOnHand, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Reserved</label>
+                    @Html.TextBoxFor(m => m.QuantityReserved, new { @class = "form-control", type = "number", step = "0.01", min = "0" })
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Available</label>
+                    @Html.TextBoxFor(m => m.QuantityAvailable, new { @class = "form-control", type = "number", step = "0.01", min = "0" })
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">UOM</label>
+                    @Html.TextBoxFor(m => m.UOM, new { @class = "form-control" })
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Reorder Level</label>
+                    @Html.TextBoxFor(m => m.ReorderLevel, new { @class = "form-control", type = "number", step = "0.01", min = "0" })
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Max Stock Level</label>
+                    @Html.TextBoxFor(m => m.MaxStockLevel, new { @class = "form-control", type = "number", step = "0.01", min = "0" })
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Notes</label>
+                    <textarea name="Notes" class="form-control" rows="3">@Html.Encode(Model.LastUpdatedBy)</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <button type="submit" class="btn btn-primary">Create Inventory</button>
+                    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        function updateSummary() {
+            const prodSel = document.querySelector('select[name="ProductId"]');
+            const prodText = prodSel && prodSel.options[prodSel.selectedIndex] ? prodSel.options[prodSel.selectedIndex].text : '-';
+            const locSel = document.querySelector('select[name="LocationId"]');
+            const locText = locSel && locSel.options[locSel.selectedIndex] ? locSel.options[locSel.selectedIndex].text : '-';
+            const qtyInput = document.querySelector('input[name="QuantityOnHand"]');
+            const qty = qtyInput ? qtyInput.value : '-';
+
+            const sp = document.getElementById('summaryProduct'); if (sp) sp.textContent = prodText;
+            const sl = document.getElementById('summaryLocation'); if (sl) sl.textContent = locText;
+            const sq = document.getElementById('summaryQty'); if (sq) sq.textContent = qty || '-';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('select[name="ProductId"]')?.addEventListener('change', updateSummary);
+            document.querySelector('select[name="LocationId"]')?.addEventListener('change', updateSummary);
+            document.querySelector('input[name="QuantityOnHand"]')?.addEventListener('input', updateSummary);
+
+            // Initialize summary
+            updateSummary();
+
+            // Form validation
+            const form = document.getElementById('createInventoryForm');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const productId = document.querySelector('select[name="ProductId"]')?.value || '';
+                    const locationId = document.querySelector('select[name="LocationId"]')?.value || '';
+                    const qtyStr = document.querySelector('input[name="QuantityOnHand"]')?.value || '';
+                    const qty = parseFloat(qtyStr || '0');
+
+                    if (!productId) {
+                        e.preventDefault();
+                        alert('Please select a product.');
+                        return false;
+                    }
+                    if (!locationId) {
+                        e.preventDefault();
+                        alert('Please select a location.');
+                        return false;
+                    }
+                    if (isNaN(qty) || qty < 0) {
+                        e.preventDefault();
+                        alert('Please enter a valid non-negative quantity.');
+                        return false;
+                    }
+
+                    return true;
+                });
+            }
+        });
+    </script>
+}
