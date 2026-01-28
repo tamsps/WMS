@@ -47,5 +47,22 @@ public class InventoryController : ControllerBase
 
         return CreatedAtAction("GetById", new { id = result.Data!.Id }, result);
     }
+
+    /// <summary>
+    /// Get inventory by ID
+    /// </summary>
+    [HttpGet("{id}")]
+    [Authorize(Roles = "Admin,Manager,WarehouseStaff")]
+    public async Task<IActionResult> GetById(Guid id)
+    {
+        var query = new GetInventoryByIdQuery { Id = id };
+        var result = await _mediator.Send(query);
+
+        if (!result.IsSuccess)
+        {
+            return NotFound(result);
+        }
+        return Ok(result);
+    }
 }
 
