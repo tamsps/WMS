@@ -63,16 +63,19 @@ namespace WMS.Web.Models
     {
         public Guid Id { get; set; }
         public Guid InventoryId { get; set; }
+        public string TransactionNumber { get; set; } = string.Empty;
         public string ProductSKU { get; set; } = string.Empty;
         public string ProductName { get; set; } = string.Empty;
         public string LocationCode { get; set; } = string.Empty;
         public string TransactionType { get; set; } = string.Empty;
         public decimal Quantity { get; set; }
+        public decimal BalanceBefore { get; set; }
         public decimal BalanceAfter { get; set; }
         public string? ReferenceType { get; set; }
         public Guid? ReferenceId { get; set; }
+        public string? ReferenceNumber { get; set; }
         public string? Notes { get; set; }
-        public DateTime TransactionDate { get; set; }
+        public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
     }
 }

@@ -9,4 +9,150 @@
             <h2 class="mb-1"><i class="bi bi-boxes"></i> Inventory Details</h2>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                    <li class="breadcrumb-item"><a asp-controller="Inventory" asp-action="Index">Inventory</a></li>
+                    <li class="breadcrumb-item active">Details</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+            <a asp-action="Transactions" asp-route-inventoryId="@Model.Id" class="btn btn-outline-info">
+                <i class="bi bi-clock-history"></i> View Transactions
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Inventory Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Product</h6>
+                            <p class="mb-3">
+                                <strong>@Model.ProductName</strong><br />
+                                <small class="text-muted">SKU: @Model.ProductSKU</small>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Location</h6>
+                            <p class="mb-3">
+                                <strong>@Model.LocationName</strong><br />
+                                <small class="text-muted">Code: @Model.LocationCode</small>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Quantity On Hand</h6>
+                            <p class="mb-3 fs-5 fw-bold text-primary">@Model.QuantityOnHand.ToString("N2")</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Reserved</h6>
+                            <p class="mb-3 fs-5 fw-bold text-warning">@Model.QuantityReserved.ToString("N2")</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Available</h6>
+                            <p class="mb-3 fs-5 fw-bold text-success">@Model.QuantityAvailable.ToString("N2")</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Last Updated</h6>
+                            <p class="mb-3">@Model.LastUpdated.ToString("MMM dd, yyyy HH:mm")</p>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.UOM))
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Unit of Measure</h6>
+                                <p class="mb-3">@Model.UOM</p>
+                            </div>
+                            @if (Model.ReorderLevel.HasValue)
+                            {
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Reorder Level</h6>
+                                    <p class="mb-3">@Model.ReorderLevel.Value.ToString("N2")</p>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (Model.MaxStockLevel.HasValue)
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Max Stock Level</h6>
+                                <p class="mb-3">@Model.MaxStockLevel.Value.ToString("N2")</p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.LastUpdatedBy))
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Last Updated By</h6>
+                                <p class="mb-3">@Model.LastUpdatedBy</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-action="Transactions" asp-route-inventoryId="@Model.Id" class="btn btn-outline-info">
+                            <i class="bi bi-clock-history"></i> View Transaction History
+                        </a>
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Inventory List
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.QuantityOnHand <= (Model.ReorderLevel ?? 0))
+            {
+                <div class="card border-warning">
+                    <div class="card-body">
+                        <div class="alert alert-warning mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Low Stock Alert</strong><br />
+                            This inventory is at or below the reorder level.
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
