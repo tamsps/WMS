@@ -28,12 +28,12 @@ namespace WMS.Web.Controllers
                 if (!string.IsNullOrWhiteSpace(filterStatus))
                     queryString += $"&status={Uri.EscapeDataString(filterStatus)}";
 
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<PaymentViewModel>>>(queryString);
+                var result = await _apiService.GetAsync<PagedResult<PaymentViewModel>>(queryString);
 
                 var viewModel = new PaymentListViewModel
                 {
-                    Items = result?.Data?.Items ?? new List<PaymentViewModel>(),
-                    TotalCount = result?.Data?.TotalCount ?? 0,
+                    Items = result.Data?.Items ?? new List<PaymentViewModel>(),
+                    TotalCount = result.Data?.TotalCount ?? 0,
                     CurrentPage = pageNumber,
                     PageSize = pageSize,
                     SearchTerm = searchTerm,
@@ -57,8 +57,8 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<PaymentViewModel>>($"payment/{id}");
-                if (result?.Data == null)
+                var result = await _apiService.GetAsync<PaymentViewModel>($"payment/{id}");
+                if (!result.IsSuccess || result.Data == null)
                 {
                     TempData["ErrorMessage"] = "Payment not found";
                     return RedirectToAction(nameof(Index));
@@ -92,13 +92,13 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<PaymentViewModel>>("payment", model);
-                if (result?.IsSuccess == true)
+                var result = await _apiService.PostAsync<PaymentViewModel>("payment", model);
+                if (result.IsSuccess && result.Data != null)
                 {
                     TempData["SuccessMessage"] = "Payment created successfully";
-                    return RedirectToAction(nameof(Details), new { id = result.Data?.Id });
+                    return RedirectToAction(nameof(Details), new { id = result.Data.Id });
                 }
-                TempData["ErrorMessage"] = result?.Message ?? "Failed to create payment";
+                TempData["ErrorMessage"] = result.Message ?? "Failed to create payment";
                 return View(model);
             }
             catch (Exception ex)
@@ -118,8 +118,8 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<PaymentViewModel>>($"payment/{id}/confirm", null);
-                if (result?.IsSuccess == true)
+                var result = await _apiService.PostAsync<PaymentViewModel>($"payment/{id}/confirm", null);
+                if (result.IsSuccess)
                     TempData["SuccessMessage"] = "Payment confirmed successfully";
                 else
                     TempData["ErrorMessage"] = "Failed to confirm payment";

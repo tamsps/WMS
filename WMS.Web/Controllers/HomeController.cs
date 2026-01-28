@@ -42,44 +42,44 @@ public class HomeController : Controller
         try
         {
             // Fetch Product Statistics
-            var productResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("products?pageSize=1");
-            if (productResult?.IsSuccess == true && productResult.Data != null)
+            var productResult = await _apiService.GetAsync<PagedResult<ProductViewModel>>("products?pageSize=1");
+            if (productResult.IsSuccess && productResult.Data != null)
             {
                 model.TotalProducts = productResult.Data.TotalCount;
             }
 
             // Fetch Location Statistics
-            var locationResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1");
-            if (locationResult?.IsSuccess == true && locationResult.Data != null)
+            var locationResult = await _apiService.GetAsync<PagedResult<LocationViewModel>>("locations?pageSize=1");
+            if (locationResult.IsSuccess && locationResult.Data != null)
             {
                 model.TotalLocations = locationResult.Data.TotalCount;
             }
 
             // Fetch Inventory Statistics  
-            var inventoryResult = await _apiService.GetAsync<ApiResponse<PagedResult<InventoryViewModel>>>("inventory?pageSize=1000");
-            if (inventoryResult?.IsSuccess == true && inventoryResult.Data != null)
+            var inventoryResult = await _apiService.GetAsync<PagedResult<InventoryViewModel>>("inventory?pageSize=1000");
+            if (inventoryResult.IsSuccess && inventoryResult.Data != null)
             {
                 // Calculate total inventory quantity (use QuantityOnHand)
                 model.TotalInventoryValue = inventoryResult.Data.Items.Sum(i => i.QuantityOnHand);
             }
 
             // Fetch Inbound Count - Get total count from list endpoint
-            var inboundResult = await _apiService.GetAsync<ApiResponse<PagedResult<InboundViewModel>>>("inbound?pageSize=1");
-            if (inboundResult?.IsSuccess == true && inboundResult.Data != null)
+            var inboundResult = await _apiService.GetAsync<PagedResult<InboundViewModel>>("inbound?pageSize=1");
+            if (inboundResult.IsSuccess && inboundResult.Data != null)
             {
                 model.PendingInbound = inboundResult.Data.TotalCount;
             }
 
             // Fetch Outbound Count - Get total count from list endpoint
-            var outboundResult = await _apiService.GetAsync<ApiResponse<PagedResult<OutboundViewModel>>>("outbound?pageSize=1");
-            if (outboundResult?.IsSuccess == true && outboundResult.Data != null)
+            var outboundResult = await _apiService.GetAsync<PagedResult<OutboundViewModel>>("outbound?pageSize=1");
+            if (outboundResult.IsSuccess && outboundResult.Data != null)
             {
                 model.PendingOutbound = outboundResult.Data.TotalCount;
             }
 
             // Fetch Delivery Statistics - Get total count from list endpoint
-            var deliveryResult = await _apiService.GetAsync<ApiResponse<PagedResult<DeliveryViewModel>>>("delivery?pageSize=1");
-            if (deliveryResult?.IsSuccess == true && deliveryResult.Data != null)
+            var deliveryResult = await _apiService.GetAsync<PagedResult<DeliveryViewModel>>("delivery?pageSize=1");
+            if (deliveryResult.IsSuccess && deliveryResult.Data != null)
             {
                 model.InTransitDeliveries = deliveryResult.Data.TotalCount;
             }

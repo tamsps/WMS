@@ -31,12 +31,12 @@ namespace WMS.Web.Controllers
                 if (!string.IsNullOrWhiteSpace(filterStatus))
                     queryString += $"&status={Uri.EscapeDataString(filterStatus)}";
 
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<InboundViewModel>>>(queryString);
+                var result = await _apiService.GetAsync<PagedResult<InboundViewModel>>(queryString);
 
                 var viewModel = new InboundListViewModel
                 {
-                    Items = result?.Data?.Items ?? new List<InboundViewModel>(),
-                    TotalCount = result?.Data?.TotalCount ?? 0,
+                    Items = result.IsSuccess ? result.Data?.Items ?? new List<InboundViewModel>() : new List<InboundViewModel>(),
+                    TotalCount = result.Data?.TotalCount ?? 0,
                     CurrentPage = pageNumber,
                     PageSize = pageSize,
                     SearchTerm = searchTerm,
@@ -63,11 +63,11 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<InboundViewModel>>($"inbound/{id}");
+                var result = await _apiService.GetAsync<InboundViewModel>($"inbound/{id}");
 
-                if (result?.Data == null)
+                if (!result.IsSuccess || result.Data == null)
                 {
-                    TempData["ErrorMessage"] = "Inbound order not found";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -111,9 +111,9 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>("inbound", model);
+                var result = await _apiService.PostAsync<InboundViewModel>("inbound", model);
 
-                if (result?.IsSuccess == true && result.Data != null)
+                if (result.IsSuccess && result.Data != null)
                 {
                     _logger.LogInformation("Inbound order created successfully with ID: {InboundId}", result.Data.Id);
                     TempData["SuccessMessage"] = "Inbound order created successfully. Please receive the items.";
@@ -123,7 +123,7 @@ namespace WMS.Web.Controllers
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = result?.Message ?? "Failed to create inbound order";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                     await LoadProductsAndLocations();
                     return View(model);
                 }
@@ -147,11 +147,11 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<InboundViewModel>>($"inbound/{id}");
+                var result = await _apiService.GetAsync<InboundViewModel>($"inbound/{id}");
 
-                if (result?.Data == null)
+                if (!result.IsSuccess || result.Data == null)
                 {
-                    TempData["ErrorMessage"] = "Inbound order not found";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -212,16 +212,16 @@ namespace WMS.Web.Controllers
                     }).ToList()
                 }; 
 
-                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"inbound/{id}/receive", receiveDto);
+                var result = await _apiService.PostAsync<InboundViewModel>($"inbound/{id}/receive", receiveDto);
 
-                if (result?.IsSuccess == true)
+                if (result.IsSuccess)
                 {
                     TempData["SuccessMessage"] = "Inbound order received successfully. Inventory has been updated.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = result?.Message ?? "Failed to receive inbound order";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                     return View(model);
                 }
             }
@@ -245,15 +245,15 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"inbound/{id}/complete", null);
+                var result = await _apiService.PostAsync<InboundViewModel>($"inbound/{id}/complete", null);
 
-                if (result?.IsSuccess == true)
+                if (result.IsSuccess)
                 {
                     TempData["SuccessMessage"] = "Inbound order completed successfully";
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Failed to complete inbound order";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                 }
             }
             catch (Exception ex)
@@ -277,15 +277,15 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<InboundViewModel>>($"inbound/{id}/cancel", null);
+                var result = await _apiService.PostAsync<InboundViewModel>($"inbound/{id}/cancel", null);
 
-                if (result?.IsSuccess == true)
+                if (result.IsSuccess)
                 {
                     TempData["SuccessMessage"] = "Inbound order cancelled successfully";
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Failed to cancel inbound order";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                 }
             }
             catch (Exception ex)
@@ -302,11 +302,11 @@ namespace WMS.Web.Controllers
         {
             try
             {
-                var productsResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("products?pageSize=1000&status=active");
-                ViewBag.Products = productsResult?.Data?.Items ?? new List<ProductViewModel>();
+                var productsResult = await _apiService.GetAsync<PagedResult<ProductViewModel>>("products?pageSize=1000&status=active");
+                ViewBag.Products = productsResult.Data?.Items ?? new List<ProductViewModel>();
 
-                var locationsResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1000&isActive=true");
-                ViewBag.Locations = locationsResult?.Data?.Items ?? new List<LocationViewModel>();
+                var locationsResult = await _apiService.GetAsync<PagedResult<LocationViewModel>>("locations?pageSize=1000&isActive=true");
+                ViewBag.Locations = locationsResult.Data?.Items ?? new List<LocationViewModel>();
             }
             catch (Exception ex)
             {

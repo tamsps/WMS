@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using Newtonsoft.Json;
+using WMS.Web.Models;
 
 namespace WMS.Web.Services;
 
@@ -38,28 +39,29 @@ public class ApiService : IApiService
         }
     }
 
-    public async Task<T?> GetAsync<T>(string endpoint)
+    public async Task<ApiResponse<T>> GetAsync<T>(string endpoint)
     {
         try
         {
             SetAuthorizationHeader();
             var response = await _httpClient.GetAsync(endpoint);
+            var content = await response.Content.ReadAsStringAsync();
             
-            if (response.IsSuccessStatusCode)
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(content);
+            if (apiResponse == null)
             {
-                var content = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<T>(content);
+                apiResponse = new ApiResponse<T> { IsSuccess = false, Errors = new List<string> { "Failed to deserialize response" } };
             }
-
-            return default;
+            
+            return apiResponse;
         }
-        catch
+        catch (Exception ex)
         {
-            return default;
+            return new ApiResponse<T> { IsSuccess = false, Errors = new List<string> { ex.Message } };
         }
     }
 
-    public async Task<T?> PostAsync<T>(string endpoint, object? data = null)
+    public async Task<ApiResponse<T>> PostAsync<T>(string endpoint, object? data = null)
     {
         try
         {
@@ -68,22 +70,23 @@ public class ApiService : IApiService
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
             var response = await _httpClient.PostAsync(endpoint, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
             
-            if (response.IsSuccessStatusCode)
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(responseContent);
+            if (apiResponse == null)
             {
-                var responseContent = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<T>(responseContent);
+                apiResponse = new ApiResponse<T> { IsSuccess = false, Errors = new List<string> { "Failed to deserialize response" } };
             }
-
-            return default;
+            
+            return apiResponse;
         }
-        catch
+        catch (Exception ex)
         {
-            return default;
+            return new ApiResponse<T> { IsSuccess = false, Errors = new List<string> { ex.Message } };
         }
     }
 
-    public async Task<T?> PutAsync<T>(string endpoint, object data)
+    public async Task<ApiResponse<T>> PutAsync<T>(string endpoint, object data)
     {
         try
         {
@@ -92,22 +95,23 @@ public class ApiService : IApiService
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             
             var response = await _httpClient.PutAsync(endpoint, content);
+            var responseContent = await response.Content.ReadAsStringAsync();
             
-            if (response.IsSuccessStatusCode)
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(responseContent);
+            if (apiResponse == null)
             {
-                var responseContent = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<T>(responseContent);
+                apiResponse = new ApiResponse<T> { IsSuccess = false, Errors = new List<string> { "Failed to deserialize response" } };
             }
-
-            return default;
+            
+            return apiResponse;
         }
-        catch
+        catch (Exception ex)
         {
-            return default;
+            return new ApiResponse<T> { IsSuccess = false, Errors = new List<string> { ex.Message } };
         }
     }
 
-    public async Task<T?> PatchAsync<T>(string endpoint, object? data = null)
+    public async Task<ApiResponse<T>> PatchAsync<T>(string endpoint, object? data = null)
     {
         try
         {
@@ -121,18 +125,19 @@ public class ApiService : IApiService
             };
 
             var response = await _httpClient.SendAsync(request);
+            var responseContent = await response.Content.ReadAsStringAsync();
             
-            if (response.IsSuccessStatusCode)
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse<T>>(responseContent);
+            if (apiResponse == null)
             {
-                var responseContent = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<T>(responseContent);
+                apiResponse = new ApiResponse<T> { IsSuccess = false, Errors = new List<string> { "Failed to deserialize response" } };
             }
-
-            return default;
+            
+            return apiResponse;
         }
-        catch
+        catch (Exception ex)
         {
-            return default;
+            return new ApiResponse<T> { IsSuccess = false, Errors = new List<string> { ex.Message } };
         }
     }
 

@@ -28,12 +28,12 @@ namespace WMS.Web.Controllers
                 if (!string.IsNullOrWhiteSpace(filterStatus))
                     queryString += $"&status={Uri.EscapeDataString(filterStatus)}";
 
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<OutboundViewModel>>>(queryString);
+                var result = await _apiService.GetAsync<PagedResult<OutboundViewModel>>(queryString);
 
                 var viewModel = new OutboundListViewModel
                 {
-                    Items = result?.Data?.Items ?? new List<OutboundViewModel>(),
-                    TotalCount = result?.Data?.TotalCount ?? 0,
+                    Items = result.Data?.Items ?? new List<OutboundViewModel>(),
+                    TotalCount = result.Data?.TotalCount ?? 0,
                     CurrentPage = pageNumber,
                     PageSize = pageSize,
                     SearchTerm = searchTerm,
@@ -57,8 +57,8 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<OutboundViewModel>>($"outbound/{id}");
-                if (result?.Data == null)
+                var result = await _apiService.GetAsync<OutboundViewModel>($"outbound/{id}");
+                if (!result.IsSuccess || result.Data == null)
                 {
                     TempData["ErrorMessage"] = "Outbound order not found";
                     return RedirectToAction(nameof(Index));
@@ -97,14 +97,14 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>("outbound", model);
-                if (result?.IsSuccess == true && result.Data != null)
+                var result = await _apiService.PostAsync<OutboundViewModel>("outbound", model);
+                if (result.IsSuccess && result.Data != null)
                 {
                     TempData["SuccessMessage"] = "Outbound order created successfully. Please pick the items.";
                     // Redirect to Pick view instead of Details
                     return RedirectToAction(nameof(Pick), new { id = result.Data.Id });
                 }
-                TempData["ErrorMessage"] = result?.Message ?? "Failed to create outbound order";
+                TempData["ErrorMessage"] = result.Message ?? "Failed to create outbound order";
                 await LoadProductsAndLocations();
                 return View(model);
             }
@@ -125,8 +125,8 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<OutboundViewModel>>($"outbound/{id}");
-                if (result?.Data == null)
+                var result = await _apiService.GetAsync<OutboundViewModel>($"outbound/{id}");
+                if (!result.IsSuccess || result.Data == null)
                 {
                     TempData["ErrorMessage"] = "Outbound order not found";
                     return RedirectToAction(nameof(Index));
@@ -186,15 +186,15 @@ namespace WMS.Web.Controllers
                     }).ToList()
                 };
 
-                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>("outbound/pick", pickDto);
-                if (result?.IsSuccess == true)
+                var result = await _apiService.PostAsync<OutboundViewModel>("outbound/pick", pickDto);
+                if (result.IsSuccess)
                 {
                     TempData["SuccessMessage"] = "Items picked successfully. Inventory has been reserved.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = result?.Message ?? "Failed to pick items";
+                    TempData["ErrorMessage"] = result.Message ?? "Failed to pick items";
                     return View(model);
                 }
             }
@@ -214,8 +214,8 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<OutboundViewModel>>($"outbound/{id}");
-                if (result?.Data == null)
+                var result = await _apiService.GetAsync<OutboundViewModel>($"outbound/{id}");
+                if (!result.IsSuccess || result.Data == null)
                 {
                     TempData["ErrorMessage"] = "Outbound order not found";
                     return RedirectToAction(nameof(Index));
@@ -246,15 +246,15 @@ namespace WMS.Web.Controllers
                     OutboundId = model.Id
                 };
 
-                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>("outbound/ship", shipDto);
-                if (result?.IsSuccess == true)
+                var result = await _apiService.PostAsync<OutboundViewModel>("outbound/ship", shipDto);
+                if (result.IsSuccess)
                 {
                     TempData["SuccessMessage"] = "Outbound order shipped successfully. Inventory has been deducted.";
                     return RedirectToAction(nameof(Details), new { id });
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = result?.Message ?? "Failed to ship outbound order";
+                    TempData["ErrorMessage"] = result.Message ?? "Failed to ship outbound order";
                     return View(model);
                 }
             }
@@ -275,8 +275,8 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<OutboundViewModel>>($"outbound/{id}/cancel", null);
-                if (result?.IsSuccess == true)
+                var result = await _apiService.PostAsync<OutboundViewModel>($"outbound/{id}/cancel", null);
+                if (result.IsSuccess)
                     TempData["SuccessMessage"] = "Outbound order cancelled successfully";
                 else
                     TempData["ErrorMessage"] = "Failed to cancel outbound order";
@@ -294,11 +294,11 @@ namespace WMS.Web.Controllers
         {
             try
             {
-                var productsResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("products?pageSize=1000&status=active");
-                ViewBag.Products = productsResult?.Data?.Items ?? new List<ProductViewModel>();
+                var productsResult = await _apiService.GetAsync<PagedResult<ProductViewModel>>("products?pageSize=1000&status=active");
+                ViewBag.Products = productsResult.Data?.Items ?? new List<ProductViewModel>();
 
-                var locationsResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1000&isActive=true");
-                ViewBag.Locations = locationsResult?.Data?.Items ?? new List<LocationViewModel>();
+                var locationsResult = await _apiService.GetAsync<PagedResult<LocationViewModel>>("locations?pageSize=1000&isActive=true");
+                ViewBag.Locations = locationsResult.Data?.Items ?? new List<LocationViewModel>();
             }
             catch (Exception ex)
             {

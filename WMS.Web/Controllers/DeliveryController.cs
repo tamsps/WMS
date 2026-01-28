@@ -28,12 +28,12 @@ namespace WMS.Web.Controllers
                 if (!string.IsNullOrWhiteSpace(filterStatus))
                     queryString += $"&status={Uri.EscapeDataString(filterStatus)}";
 
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<DeliveryViewModel>>>(queryString);
+                var result = await _apiService.GetAsync<PagedResult<DeliveryViewModel>>(queryString);
 
                 var viewModel = new DeliveryListViewModel
                 {
-                    Items = result?.Data?.Items ?? new List<DeliveryViewModel>(),
-                    TotalCount = result?.Data?.TotalCount ?? 0,
+                    Items = result.IsSuccess ? result.Data?.Items ?? new List<DeliveryViewModel>() : new List<DeliveryViewModel>(),
+                    TotalCount = result.Data?.TotalCount ?? 0,
                     CurrentPage = pageNumber,
                     PageSize = pageSize,
                     SearchTerm = searchTerm,
@@ -57,10 +57,10 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<DeliveryViewModel>>($"delivery/{id}");
-                if (result?.Data == null)
+                var result = await _apiService.GetAsync<DeliveryViewModel>($"delivery/{id}");
+                if (!result.IsSuccess || result.Data == null)
                 {
-                    TempData["ErrorMessage"] = "Delivery not found";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                     return RedirectToAction(nameof(Index));
                 }
                 return View(result.Data);
@@ -73,13 +73,13 @@ namespace WMS.Web.Controllers
             }
         }
 
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             if (string.IsNullOrEmpty(_apiService.GetAccessToken()))
                 return RedirectToAction("Login", "Account");
 
             // Load shipped outbounds for the dropdown
-            LoadShippedOutbounds();
+            await LoadShippedOutbounds();
 
             return View(new CreateDeliveryViewModel());
         }
@@ -93,27 +93,27 @@ namespace WMS.Web.Controllers
 
             if (!ModelState.IsValid)
             {
-                LoadShippedOutbounds();
+                await LoadShippedOutbounds();
                 return View(model);
             }
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<DeliveryViewModel>>("delivery", model);
-                if (result?.IsSuccess == true)
+                var result = await _apiService.PostAsync<DeliveryViewModel>("delivery", model);
+                if (result.IsSuccess && result.Data != null)
                 {
                     TempData["SuccessMessage"] = "Delivery created successfully";
-                    return RedirectToAction(nameof(Details), new { id = result.Data?.Id });
+                    return RedirectToAction(nameof(Details), new { id = result.Data.Id });
                 }
-                TempData["ErrorMessage"] = result?.Message ?? "Failed to create delivery";
-                LoadShippedOutbounds();
+                TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
+                await LoadShippedOutbounds();
                 return View(model);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating delivery");
                 TempData["ErrorMessage"] = "Error creating delivery";
-                LoadShippedOutbounds();
+                await LoadShippedOutbounds();
                 return View(model);
             }
         }
@@ -127,11 +127,11 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PatchAsync<ApiResponse<DeliveryViewModel>>($"delivery/{id}/status", new { status });
-                if (result?.IsSuccess == true)
+                var result = await _apiService.PatchAsync<DeliveryViewModel>($"delivery/{id}/status", new { status });
+                if (result.IsSuccess)
                     TempData["SuccessMessage"] = "Delivery status updated successfully";
                 else
-                    TempData["ErrorMessage"] = "Failed to update delivery status";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
             }
             catch (Exception ex)
             {
@@ -145,10 +145,10 @@ namespace WMS.Web.Controllers
         {
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<DeliveryViewModel>>($"delivery/tracking/{trackingNumber}");
-                if (result?.Data == null)
+                var result = await _apiService.GetAsync<DeliveryViewModel>($"delivery/tracking/{trackingNumber}");
+                if (!result.IsSuccess || result.Data == null)
                 {
-                    TempData["ErrorMessage"] = "Delivery not found";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                     return View("TrackNotFound");
                 }
                 return View(result.Data);
@@ -166,8 +166,8 @@ namespace WMS.Web.Controllers
             try
             {
                 // Load outbounds with status "Shipped" (assuming that's the status that allows delivery)
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<OutboundViewModel>>>("outbound?pageSize=1000&status=Shipped");
-                ViewBag.Outbounds = result?.Data?.Items ?? new List<OutboundViewModel>();
+                var result = await _apiService.GetAsync<PagedResult<OutboundViewModel>>("outbound?pageSize=1000&status=Shipped");
+                ViewBag.Outbounds = result.IsSuccess ? result.Data?.Items ?? new List<OutboundViewModel>() : new List<OutboundViewModel>();
             }
             catch (Exception ex)
             {

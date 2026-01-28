@@ -43,9 +43,9 @@ public class AccountController : Controller
 
         _logger.LogInformation("Attempting login for user: {Username}", model.Username);
 
-        var result = await _apiService.PostAsync<ApiResponse<AuthResponse>>("auth/login", loginDto);
+        var result = await _apiService.PostAsync<AuthResponse>("auth/login", loginDto);
 
-        if (result?.IsSuccess == true && result.Data != null)
+        if (result.IsSuccess && result.Data != null)
         {
             _logger.LogInformation("Login successful for user: {Username}", model.Username);
             
@@ -109,15 +109,15 @@ public class AccountController : Controller
             LastName = model.LastName
         };
 
-        var result = await _apiService.PostAsync<ApiResponse<AuthResponse>>("api/auth/register", registerDto);
+        var result = await _apiService.PostAsync<AuthResponse>("api/auth/register", registerDto);
 
-        if (result?.IsSuccess == true)
+        if (result.IsSuccess)
         {
             TempData["SuccessMessage"] = "Registration successful! Please login.";
             return RedirectToAction(nameof(Login));
         }
 
-        ModelState.AddModelError(string.Empty, result?.Message ?? "Registration failed");
+        ModelState.AddModelError(string.Empty, result.Message ?? "Registration failed");
         return View(model);
     }
 

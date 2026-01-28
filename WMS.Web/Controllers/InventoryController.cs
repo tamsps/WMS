@@ -33,12 +33,18 @@ namespace WMS.Web.Controllers
                 if (!string.IsNullOrWhiteSpace(filterLocation))
                     queryString += $"&locationId={filterLocation}";
 
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<InventoryViewModel>>>(queryString);
+                var result = await _apiService.GetAsync<PagedResult<InventoryViewModel>>(queryString);
+
+                if (!result.IsSuccess)
+                {
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
+                    return View(new InventoryListViewModel());
+                }
 
                 var viewModel = new InventoryListViewModel
                 {
-                    Inventories = result?.Data?.Items ?? new List<InventoryViewModel>(),
-                    TotalCount = result?.Data?.TotalCount ?? 0,
+                    Inventories = result.Data?.Items ?? new List<InventoryViewModel>(),
+                    TotalCount = result.Data?.TotalCount ?? 0,
                     PageNumber = pageNumber,
                     PageSize = pageSize,
                     SearchTerm = searchTerm,
@@ -68,11 +74,11 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<InventoryViewModel>>($"inventory/{id}");
+                var result = await _apiService.GetAsync<InventoryViewModel>($"inventory/{id}");
 
-                if (result?.Data == null)
+                if (!result.IsSuccess)
                 {
-                    TempData["ErrorMessage"] = "Inventory record not found";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -106,12 +112,18 @@ namespace WMS.Web.Controllers
                 if (endDate.HasValue)
                     queryString += $"&endDate={endDate.Value:yyyy-MM-dd}";
 
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<InventoryTransactionViewModel>>>(queryString);
+                var result = await _apiService.GetAsync<PagedResult<InventoryTransactionViewModel>>(queryString);
+
+                if (!result.IsSuccess)
+                {
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
+                    return View(new InventoryTransactionListViewModel());
+                }
 
                 var viewModel = new InventoryTransactionListViewModel
                 {
-                    Transactions = result?.Data?.Items ?? new List<InventoryTransactionViewModel>(),
-                    TotalCount = result?.Data?.TotalCount ?? 0,
+                    Transactions = result.Data?.Items ?? new List<InventoryTransactionViewModel>(),
+                    TotalCount = result.Data?.TotalCount ?? 0,
                     PageNumber = pageNumber,
                     PageSize = pageSize,
                     FilterType = filterType,
@@ -174,13 +186,13 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<InventoryViewModel>>("inventory", model);
-                if (result?.IsSuccess == true)
+                var result = await _apiService.PostAsync<InventoryViewModel>("inventory", model);
+                if (result.IsSuccess && result.Data != null)
                 {
                     TempData["SuccessMessage"] = "Inventory record created successfully";
-                    return RedirectToAction(nameof(Details), new { id = result.Data?.Id });
+                    return RedirectToAction(nameof(Details), new { id = result.Data.Id });
                 }
-                TempData["ErrorMessage"] = result?.Message ?? "Failed to create inventory";
+                TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                 await LoadProductsAndLocations();
                 return View(model);
             }
@@ -198,25 +210,25 @@ namespace WMS.Web.Controllers
         {
             try
             {
-                var productsResult = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>("products?pageSize=1000&isActive=true");
-                var locationsResult = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1000&isActive=true");
+                var productsResult = await _apiService.GetAsync<PagedResult<ProductViewModel>>("products?pageSize=1000&isActive=true");
+                var locationsResult = await _apiService.GetAsync<PagedResult<LocationViewModel>>("locations?pageSize=1000&isActive=true");
 
-                if (productsResult == null || productsResult.IsSuccess != true || productsResult.Data == null)
+                if (!productsResult.IsSuccess || productsResult.Data == null)
                 {
-                    _logger.LogWarning("LoadProductsAndLocations: productsResult is null or unsuccessful");
+                    _logger.LogWarning("LoadProductsAndLocations: productsResult unsuccessful");
                 }
-                if (locationsResult == null || locationsResult.IsSuccess != true || locationsResult.Data == null)
+                if (!locationsResult.IsSuccess || locationsResult.Data == null)
                 {
-                    _logger.LogWarning("LoadProductsAndLocations: locationsResult is null or unsuccessful");
+                    _logger.LogWarning("LoadProductsAndLocations: locationsResult unsuccessful");
                 }
 
-                var productItems = productsResult?.Data?.Items?.Select(p => new SelectListItem
+                var productItems = productsResult.Data?.Items?.Select(p => new SelectListItem
                 {
                     Value = p.Id.ToString(),
                     Text = p.Name
                 }) ?? new List<SelectListItem>();
 
-                var locationItems = locationsResult?.Data?.Items?.Select(l => new SelectListItem
+                var locationItems = locationsResult.Data?.Items?.Select(l => new SelectListItem
                 {
                     Value = l.Id.ToString(),
                     Text = (l.Code ?? "") + " - " + (l.Name ?? "")
@@ -268,8 +280,8 @@ namespace WMS.Web.Controllers
         {
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1000&isActive=true");
-                ViewBag.Locations = result?.Data?.Items ?? new List<LocationViewModel>();
+                var result = await _apiService.GetAsync<PagedResult<LocationViewModel>>("locations?pageSize=1000&isActive=true");
+                ViewBag.Locations = result.IsSuccess ? result.Data?.Items ?? new List<LocationViewModel>() : new List<LocationViewModel>();
             }
             catch (Exception ex)
             {

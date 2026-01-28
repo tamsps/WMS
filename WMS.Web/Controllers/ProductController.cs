@@ -31,12 +31,12 @@ public class ProductController : Controller
             if (!string.IsNullOrEmpty(status))
                 queryString += $"&status={status}";
 
-            var result = await _apiService.GetAsync<ApiResponse<PagedResult<ProductViewModel>>>(queryString);
+            var result = await _apiService.GetAsync<PagedResult<ProductViewModel>>(queryString);
 
             var model = new ProductListViewModel
             {
-                Products = result?.Data?.Items ?? new List<ProductViewModel>(),
-                TotalCount = result?.Data?.TotalCount ?? 0,
+                Products = result.Data?.Items ?? new List<ProductViewModel>(),
+                TotalCount = result.Data?.TotalCount ?? 0,
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 SearchTerm = searchTerm,
@@ -63,9 +63,9 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.GetAsync<ApiResponse<ProductViewModel>>($"products/{id}");
+            var result = await _apiService.GetAsync<ProductViewModel>($"products/{id}");
             
-            if (result?.Data == null)
+            if (!result.IsSuccess)
             {
                 TempData["ErrorMessage"] = "Product not found";
                 return RedirectToAction(nameof(Index));
@@ -109,15 +109,15 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.PostAsync<ApiResponse<ProductViewModel>>("products", model);
+            var result = await _apiService.PostAsync<ProductViewModel>("products", model);
 
-            if (result?.IsSuccess == true)
+            if (result.IsSuccess && result.Data != null)
             {
                 TempData["SuccessMessage"] = "Product created successfully";
                 return RedirectToAction(nameof(Index));
             }
 
-            ModelState.AddModelError(string.Empty, result?.Message ?? "Failed to create product");
+            ModelState.AddModelError(string.Empty, string.Join(", ", result.Errors ?? new List<string>()));
             return View(model);
         }
         catch (Exception ex)
@@ -138,9 +138,9 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.GetAsync<ApiResponse<ProductViewModel>>($"products/{id}");
+            var result = await _apiService.GetAsync<ProductViewModel>($"products/{id}");
             
-            if (result?.Data == null)
+            if (!result.IsSuccess || result.Data == null)
             {
                 TempData["ErrorMessage"] = "Product not found";
                 return RedirectToAction(nameof(Index));
@@ -195,15 +195,15 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.PutAsync<ApiResponse<ProductViewModel>>($"products/{id}", model);
+            var result = await _apiService.PutAsync<ProductViewModel>($"products/{id}", model);
 
-            if (result?.IsSuccess == true)
+            if (result.IsSuccess && result.Data != null)
             {
                 TempData["SuccessMessage"] = "Product updated successfully";
                 return RedirectToAction(nameof(Index));
             }
 
-            ModelState.AddModelError(string.Empty, result?.Message ?? "Failed to update product");
+            ModelState.AddModelError(string.Empty, string.Join(", ", result.Errors ?? new List<string>()));
             return View(model);
         }
         catch (Exception ex)
@@ -259,15 +259,15 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.PatchAsync<ApiResponse<ProductViewModel>>($"products/{id}/activate");
+            var result = await _apiService.PatchAsync<ProductViewModel>($"products/{id}/activate");
 
-            if (result?.IsSuccess == true)
+            if (result.IsSuccess)
             {
                 TempData["SuccessMessage"] = "Product activated successfully";
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to activate product";
+                TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
             }
 
             return RedirectToAction(nameof(Index));
@@ -292,15 +292,15 @@ public class ProductController : Controller
 
         try
         {
-            var result = await _apiService.PatchAsync<ApiResponse<ProductViewModel>>($"products/{id}/deactivate");
+            var result = await _apiService.PatchAsync<ProductViewModel>($"products/{id}/deactivate");
 
-            if (result?.IsSuccess == true)
+            if (result.IsSuccess)
             {
                 TempData["SuccessMessage"] = "Product deactivated successfully";
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to deactivate product";
+                TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
             }
 
             return RedirectToAction(nameof(Index));

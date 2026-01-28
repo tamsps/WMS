@@ -33,12 +33,12 @@ namespace WMS.Web.Controllers
                 if (!string.IsNullOrWhiteSpace(filterType))
                     queryString += $"&type={Uri.EscapeDataString(filterType)}";
 
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>(queryString);
+                var result = await _apiService.GetAsync<PagedResult<LocationViewModel>>(queryString);
 
                 var viewModel = new LocationListViewModel
                 {
-                    Locations = result?.Data?.Items ?? new List<LocationViewModel>(),
-                    TotalCount = result?.Data?.TotalCount ?? 0,
+                    Locations = result.Data?.Items ?? new List<LocationViewModel>(),
+                    TotalCount = result.Data?.TotalCount ?? 0,
                     PageNumber = pageNumber,
                     PageSize = pageSize,
                     SearchTerm = searchTerm,
@@ -66,9 +66,9 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<LocationViewModel>>($"locations/{id}");
+                var result = await _apiService.GetAsync<LocationViewModel>($"locations/{id}");
 
-                if (result?.Data == null)
+                if (!result.IsSuccess || result.Data == null)
                 {
                     TempData["ErrorMessage"] = "Location not found";
                     return RedirectToAction(nameof(Index));
@@ -114,16 +114,16 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PostAsync<ApiResponse<LocationViewModel>>("locations", model);
+                var result = await _apiService.PostAsync<LocationViewModel>("locations", model);
 
-                if (result?.IsSuccess == true)
+                if (result.IsSuccess && result.Data != null)
                 {
                     TempData["SuccessMessage"] = "Location created successfully";
                     return RedirectToAction(nameof(Index));
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = result?.Message ?? "Failed to create location";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                     await LoadParentLocations();
                     return View(model);
                 }
@@ -147,9 +147,9 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<LocationViewModel>>($"locations/{id}");
+                var result = await _apiService.GetAsync<LocationViewModel>($"locations/{id}");
 
-                if (result?.Data == null)
+                if (!result.IsSuccess || result.Data == null)
                 {
                     TempData["ErrorMessage"] = "Location not found";
                     return RedirectToAction(nameof(Index));
@@ -206,16 +206,16 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PutAsync<ApiResponse<LocationViewModel>>($"locations/{id}", model);
+                var result = await _apiService.PutAsync<LocationViewModel>($"locations/{id}", model);
 
-                if (result?.IsSuccess == true)
+                if (result.IsSuccess && result.Data != null)
                 {
                     TempData["SuccessMessage"] = "Location updated successfully";
                     return RedirectToAction(nameof(Details), new { id });
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = result?.Message ?? "Failed to update location";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                     await LoadParentLocations(id);
                     return View(model);
                 }
@@ -273,15 +273,15 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PatchAsync<ApiResponse<LocationViewModel>>($"locations/{id}/activate", null);
+                var result = await _apiService.PatchAsync<LocationViewModel>($"locations/{id}/activate", null);
 
-                if (result?.IsSuccess == true)
+                if (result.IsSuccess)
                 {
                     TempData["SuccessMessage"] = "Location activated successfully";
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Failed to activate location";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                 }
             }
             catch (Exception ex)
@@ -305,15 +305,15 @@ namespace WMS.Web.Controllers
 
             try
             {
-                var result = await _apiService.PatchAsync<ApiResponse<LocationViewModel>>($"locations/{id}/deactivate", null);
+                var result = await _apiService.PatchAsync<LocationViewModel>($"locations/{id}/deactivate", null);
 
-                if (result?.IsSuccess == true)
+                if (result.IsSuccess)
                 {
                     TempData["SuccessMessage"] = "Location deactivated successfully";
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Failed to deactivate location";
+                    TempData["ErrorMessage"] = string.Join(", ", result.Errors ?? new List<string>());
                 }
             }
             catch (Exception ex)
@@ -330,8 +330,8 @@ namespace WMS.Web.Controllers
         {
             try
             {
-                var result = await _apiService.GetAsync<ApiResponse<PagedResult<LocationViewModel>>>("locations?pageSize=1000");
-                var locations = result?.Data?.Items ?? new List<LocationViewModel>();
+                var result = await _apiService.GetAsync<PagedResult<LocationViewModel>>("locations?pageSize=1000");
+                var locations = result.Data?.Items ?? new List<LocationViewModel>();
 
                 if (excludeId.HasValue)
                 {
