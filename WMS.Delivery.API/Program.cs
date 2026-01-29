@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using WMS.Delivery.API.Interfaces;
 using WMS.Domain.Interfaces;
 using WMS.Domain.Data;
 using WMS.Domain.Repositories;

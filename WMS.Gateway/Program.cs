@@ -62,13 +62,13 @@ app.MapGet("/gateway/info", () => Results.Ok(new
     name = "WMS API Gateway",
     version = "1.0.0",
     description = "Unified entry point for all WMS microservices",
-    gatewayUrl = "https://localhost:7000",
+    gatewayUrl = "http://localhost:5000",
     services = new[]
     {
         new { 
             name = "Auth", 
             route = "/auth", 
-            backendUrl = "https://localhost:7081",
+            backendUrl = "http://localhost:5190",
             endpoints = new[] { 
                 "/auth/login", 
                 "/auth/register", 
