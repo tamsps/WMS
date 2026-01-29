@@ -6,15 +6,14 @@ REM This script starts all WMS services in separate command windows
 REM Each service runs on a unique port for independent deployment
 REM
 REM Services Started:
-REM   - WMS.API (Port 5011)
-REM   - WMS.Auth.API (Port 5002)
-REM   - WMS.Products.API (Port 5003)
-REM   - WMS.Locations.API (Port 5004)
-REM   - WMS.Inbound.API (Port 5005)
-REM   - WMS.Outbound.API (Port 5006)
-REM   - WMS.Payment.API (Port 5007)
-REM   - WMS.Delivery.API (Port 5009)
-REM   - WMS.Inventory.API (Port 5010)
+REM   - WMS.Auth.API (Port 5190)
+REM   - WMS.Products.API (Port 62527)
+REM   - WMS.Locations.API (Port 62522)
+REM   - WMS.Inbound.API (Port 62520)
+REM   - WMS.Outbound.API (Port 62519)
+REM   - WMS.Payment.API (Port 62521)
+REM   - WMS.Delivery.API (Port 62529)
+REM   - WMS.Inventory.API (Port 62531)
 REM   - WMS.Gateway (Port 5000)
 REM   - WMS.Web (Port 5001)
 REM
@@ -51,73 +50,67 @@ echo Project Root: %PROJECT_ROOT%
 echo Starting all services in separate windows...
 echo.
 echo SERVICES TO START:
-echo   [1/11] WMS.API (Port 5011) - Main API Backend
-echo   [2/11] WMS.Auth.API (Port 5002) - Authentication Service
-echo   [3/11] WMS.Products.API (Port 5003) - Product Management
-echo   [4/11] WMS.Locations.API (Port 5004) - Location Management
-echo   [5/11] WMS.Inbound.API (Port 5005) - Inbound Operations
-echo   [6/11] WMS.Outbound.API (Port 5006) - Outbound Operations
-echo   [7/11] WMS.Payment.API (Port 5007) - Payment Processing
-echo   [8/11] WMS.Delivery.API (Port 5009) - Delivery Tracking
-echo   [9/11] WMS.Inventory.API (Port 5010) - Inventory Management
-echo  [10/11] WMS.Gateway (Port 5000) - API Gateway
-echo  [11/11] WMS.Web (Port 5001) - Web User Interface
+echo   [1/10] WMS.Auth.API (Port 5190) - Authentication Service
+echo   [2/10] WMS.Products.API (Port 62527) - Product Management
+echo   [3/10] WMS.Locations.API (Port 62522) - Location Management
+echo   [4/10] WMS.Inbound.API (Port 62520) - Inbound Operations
+echo   [5/10] WMS.Outbound.API (Port 62519) - Outbound Operations
+echo   [6/10] WMS.Payment.API (Port 62521) - Payment Processing
+echo   [7/10] WMS.Delivery.API (Port 62529) - Delivery Tracking
+echo   [8/10] WMS.Inventory.API (Port 62531) - Inventory Management
+echo   [9/10] WMS.Gateway (Port 5000) - API Gateway
+echo  [10/10] WMS.Web (Port 5001) - Web User Interface
 echo.
 echo ============================================================================
 echo.
 
-REM Start WMS.API
-echo [1/11] Starting WMS.API (Port 5011)...
-start "WMS.API - Port 5011" /d "%PROJECT_ROOT%\WMS.API" cmd /k "dotnet run --urls https://localhost:5011"
-timeout /t 2 /nobreak
-
 REM Start WMS.Auth.API
-echo [2/11] Starting WMS.Auth.API (Port 5002)...
-start "WMS.Auth.API - Port 5002" /d "%PROJECT_ROOT%\WMS.Auth.API" cmd /k "dotnet run --urls https://localhost:5002"
+echo [1/10] Starting WMS.Auth.API (Port 5190)...
+start "WMS.Auth.API - Port 5190" /d "%PROJECT_ROOT%\WMS.Auth.API" cmd /k "dotnet run --urls https://localhost:5190"
 timeout /t 2 /nobreak
 
 REM Start WMS.Products.API
-echo [3/11] Starting WMS.Products.API (Port 5003)...
-start "WMS.Products.API - Port 5003" /d "%PROJECT_ROOT%\WMS.Products.API" cmd /k "dotnet run --urls https://localhost:5003"
+echo [2/10] Starting WMS.Products.API (Port 62527)...
+start "WMS.Products.API - Port 62527" /d "%PROJECT_ROOT%\WMS.Products.API" cmd /k "dotnet run --urls https://localhost:62527"
 timeout /t 2 /nobreak
 
 REM Start WMS.Locations.API
-echo [4/11] Starting WMS.Locations.API (Port 5004)...
-start "WMS.Locations.API - Port 5004" /d "%PROJECT_ROOT%\WMS.Locations.API" cmd /k "dotnet run --urls https://localhost:5004"
+echo [3/10] Starting WMS.Locations.API (Port 62522)...
+start "WMS.Locations.API - Port 62522" /d "%PROJECT_ROOT%\WMS.Locations.API" cmd /k "dotnet run --urls https://localhost:62522"
 timeout /t 2 /nobreak
 
 REM Start WMS.Inbound.API
-echo [5/11] Starting WMS.Inbound.API (Port 5005)...
-start "WMS.Inbound.API - Port 5005" /d "%PROJECT_ROOT%\WMS.Inbound.API" cmd /k "dotnet run --urls https://localhost:5005"
+echo [4/10] Starting WMS.Inbound.API (Port 62520)...
+start "WMS.Inbound.API - Port 62520" /d "%PROJECT_ROOT%\WMS.Inbound.API" cmd /k "dotnet run --urls https://localhost:62520"
 timeout /t 2 /nobreak
 
 REM Start WMS.Outbound.API
-echo [6/11] Starting WMS.Outbound.API (Port 5006)...
-start "WMS.Outbound.API - Port 5006" /d "%PROJECT_ROOT%\WMS.Outbound.API" cmd /k "dotnet run --urls https://localhost:5006"
+echo [5/10] Starting WMS.Outbound.API (Port 62519)...
+start "WMS.Outbound.API - Port 62519" /d "%PROJECT_ROOT%\WMS.Outbound.API" cmd /k "dotnet run --urls https://localhost:62519"
 timeout /t 2 /nobreak
 
 REM Start WMS.Payment.API
-echo [7/11] Starting WMS.Payment.API (Port 5007)...
-start "WMS.Payment.API - Port 5007" /d "%PROJECT_ROOT%\WMS.Payment.API" cmd /k "dotnet run --urls https://localhost:5007"
+echo [6/10] Starting WMS.Payment.API (Port 62521)...
+start "WMS.Payment.API - Port 62521" /d "%PROJECT_ROOT%\WMS.Payment.API" cmd /k "dotnet run --urls https://localhost:62521"
 timeout /t 2 /nobreak
 
 REM Start WMS.Delivery.API
-echo [8/11] Starting WMS.Delivery.API (Port 5009)...
-start "WMS.Delivery.API - Port 5009" /d "%PROJECT_ROOT%\WMS.Delivery.API" cmd /k "dotnet run --urls https://localhost:5009"
+echo [7/10] Starting WMS.Delivery.API (Port 62529)...
+start "WMS.Delivery.API - Port 62529" /d "%PROJECT_ROOT%\WMS.Delivery.API" cmd /k "dotnet run --urls https://localhost:62529"
 timeout /t 2 /nobreak
 
 REM Start WMS.Inventory.API
-echo [9/11] Starting WMS.Inventory.API (Port 5010)...
-start "WMS.Inventory.API - Port 5010" /d "%PROJECT_ROOT%\WMS.Inventory.API" cmd /k "dotnet run --urls https://localhost:5010"
+echo [8/10] Starting WMS.Inventory.API (Port 62531)...
+start "WMS.Inventory.API - Port 62531" /d "%PROJECT_ROOT%\WMS.Inventory.API" cmd /k "dotnet run --urls https://localhost:62531"
 timeout /t 2 /nobreak
 
 REM Start WMS.Gateway
-echo [10/11] Starting WMS.Gateway (Port 5000)...
+echo [9/10] Starting WMS.Gateway (Port 5000)...
 start "WMS.Gateway - Port 5000" /d "%PROJECT_ROOT%\WMS.Gateway" cmd /k "dotnet run --urls https://localhost:5000"
 timeout /t 3 /nobreak
 
 REM Start WMS.Web
-echo [11/11] Starting WMS.Web (Port 5001)...
+echo [10/10] Starting WMS.Web (Port 5001)...
 start "WMS.Web - Port 5001" /d "%PROJECT_ROOT%\WMS.Web" cmd /k "dotnet run --urls https://localhost:5001"
 timeout /t 2 /nobreak
 
