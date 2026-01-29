@@ -37,22 +37,21 @@ if %ERRORLEVEL% neq 0 (
 echo Attempting to stop services...
 echo.
 
-REM Define services and ports
+REM Define services and ports (based on Gateway configuration)
 setlocal enabledelayedexpansion
-set "ports[0]=5011" & set "services[0]=WMS.API"
-set "ports[1]=5002" & set "services[1]=WMS.Auth.API"
-set "ports[2]=5003" & set "services[2]=WMS.Products.API"
-set "ports[3]=5004" & set "services[3]=WMS.Locations.API"
-set "ports[4]=5005" & set "services[4]=WMS.Inbound.API"
-set "ports[5]=5006" & set "services[5]=WMS.Outbound.API"
-set "ports[6]=5007" & set "services[6]=WMS.Payment.API"
-set "ports[7]=5009" & set "services[7]=WMS.Delivery.API"
-set "ports[8]=5010" & set "services[8]=WMS.Inventory.API"
-set "ports[9]=5000" & set "services[9]=WMS.Gateway"
-set "ports[10]=5001" & set "services[10]=WMS.Web"
+set "ports[0]=5190" & set "services[0]=WMS.Auth.API"
+set "ports[1]=62527" & set "services[1]=WMS.Products.API"
+set "ports[2]=62522" & set "services[2]=WMS.Locations.API"
+set "ports[3]=62520" & set "services[3]=WMS.Inbound.API"
+set "ports[4]=62519" & set "services[4]=WMS.Outbound.API"
+set "ports[5]=62521" & set "services[5]=WMS.Payment.API"
+set "ports[6]=62529" & set "services[6]=WMS.Delivery.API"
+set "ports[7]=62531" & set "services[7]=WMS.Inventory.API"
+set "ports[8]=5000" & set "services[8]=WMS.Gateway"
+
 
 REM Stop each service
-for /l %%i in (0,1,10) do (
+for /l %%i in (0,1,9) do (
     set port=!ports[%%i]!
     set service=!services[%%i]!
     
@@ -76,7 +75,7 @@ echo ===========================================================================
 echo.
 echo Services Status:
 echo   - All dotnet processes should be terminated
-echo   - Ports 5000-5011 should be available for next startup
+echo   - Ports 5000, 5001, 5190, 62519-62531 should be available for next startup
 echo.
 echo To restart services:
 echo   Run START_ALL_SERVICES.bat
