@@ -7,6 +7,7 @@ Detail in DEPLOYMENT_DATABASE.md
 ---
 
 ## START ALL MICROSERVICE
+1/ Open START_ALL_SERVICES.bat and change PROJECT_ROOT of solution
 Simple run file START_ALL_SERVICES.bat
 ```
 NOTE: Make sure that all services must be start without error, if error then system will work did not properly
