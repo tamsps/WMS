@@ -77,7 +77,7 @@ EXECUTE sp_configure 'clr enabled', 1;
 RECONFIGURE;
 ```
 ```sql
-OPEN and RUN all script in Database_20260128.sql file in SQL Management Tool for WMSDB just created: (Create schema and data)
+OPEN and RUN all script in Script/Database_20260128.sql file in SQL Management Tool for WMSDB just created: (Create schema and data)
 ```
 
 ---

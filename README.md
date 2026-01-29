@@ -20,7 +20,9 @@ e.g To run Products service manual then
 
 ---
 ## START WEBSITE
-Start WebSite in debug or start without debug by open source code by Visual Studio 2022.
+Edit DefaultConnection in WMS.Web and in all services at application.json file (Becuase all service connect to the same db name WMSDB)
 Set WMS.Web as Startup project and Run it
+Start WMS.Web in debug or start without debug by open source code by Visual Studio 2022.
+
 
 ---
