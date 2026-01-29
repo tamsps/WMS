@@ -69,11 +69,6 @@ echo [1/10] Starting WMS.Auth.API (Port 5190)...
 start "WMS.Auth.API - Port 5190" /d "%PROJECT_ROOT%\WMS.Auth.API" cmd /k "dotnet run --urls http://localhost:5190"
 timeout /t 2 /nobreak
 
-REM Start WMS.Products.API
-echo [2/10] Starting WMS.Products.API (Port 62527)...
-start "WMS.Products.API - Port 62527" /d "%PROJECT_ROOT%\WMS.Products.API" cmd /k "dotnet run --urls http://localhost:62527"
-timeout /t 2 /nobreak
-
 REM Start WMS.Locations.API
 echo [3/10] Starting WMS.Locations.API (Port 62522)...
 start "WMS.Locations.API - Port 62522" /d "%PROJECT_ROOT%\WMS.Locations.API" cmd /k "dotnet run --urls http://localhost:62522"
@@ -102,6 +97,11 @@ timeout /t 2 /nobreak
 REM Start WMS.Inventory.API
 echo [8/10] Starting WMS.Inventory.API (Port 62531)...
 start "WMS.Inventory.API - Port 62531" /d "%PROJECT_ROOT%\WMS.Inventory.API" cmd /k "dotnet run --urls http://localhost:62531"
+timeout /t 2 /nobreak
+
+REM Start WMS.Products.API
+echo [2/10] Starting WMS.Products.API (Port 62527)...
+start "WMS.Products.API - Port 62527" /d "%PROJECT_ROOT%\WMS.Products.API" cmd /k "dotnet run --urls http://localhost:62527"
 timeout /t 2 /nobreak
 
 REM Start WMS.Gateway
