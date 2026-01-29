@@ -62,13 +62,13 @@ app.MapGet("/gateway/info", () => Results.Ok(new
     name = "WMS API Gateway",
     version = "1.0.0",
     description = "Unified entry point for all WMS microservices",
-    gatewayUrl = "https://localhost:7000",
+    gatewayUrl = "http://localhost:5000",
     services = new[]
     {
         new { 
             name = "Auth", 
             route = "/auth", 
-            backendUrl = "https://localhost:7081",
+            backendUrl = "http://localhost:5190",
             endpoints = new[] { 
                 "/auth/login", 
                 "/auth/register", 
@@ -80,7 +80,7 @@ app.MapGet("/gateway/info", () => Results.Ok(new
         new { 
             name = "Products", 
             route = "/products", 
-            backendUrl = "https://localhost:62527",
+            backendUrl = "http://localhost:62527",
             endpoints = new[] { 
                 "/products", 
                 "/products/{id}", 
@@ -92,7 +92,7 @@ app.MapGet("/gateway/info", () => Results.Ok(new
         new { 
             name = "Locations", 
             route = "/locations", 
-            backendUrl = "https://localhost:62522",
+            backendUrl = "http://localhost:62522",
             endpoints = new[] { 
                 "/locations", 
                 "/locations/{id}", 
@@ -104,7 +104,7 @@ app.MapGet("/gateway/info", () => Results.Ok(new
         new { 
             name = "Inventory", 
             route = "/inventory", 
-            backendUrl = "https://localhost:62531",
+            backendUrl = "http://localhost:62531",
             endpoints = new[] { 
                 "/inventory", 
                 "/inventory/{id}", 
@@ -118,7 +118,7 @@ app.MapGet("/gateway/info", () => Results.Ok(new
         new { 
             name = "Inbound", 
             route = "/inbound", 
-            backendUrl = "https://localhost:62520",
+            backendUrl = "http://localhost:62520",
             endpoints = new[] { 
                 "/inbound", 
                 "/inbound/{id}", 
@@ -129,7 +129,7 @@ app.MapGet("/gateway/info", () => Results.Ok(new
         new { 
             name = "Outbound", 
             route = "/outbound", 
-            backendUrl = "https://localhost:62519",
+            backendUrl = "http://localhost:62519",
             endpoints = new[] { 
                 "/outbound", 
                 "/outbound/{id}", 

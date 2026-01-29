@@ -3,12 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using WMS.Auth.API.Interfaces;
-using WMS.Auth.API.Services;
 using WMS.Domain.Interfaces;
 using WMS.Domain.Data;
 using WMS.Domain.Repositories;
 using WMS.Domain.Extensions;
-//using WMS.Infrastructure.Services;
 using MediatR;
 using FluentValidation;
 
@@ -103,7 +101,7 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Dependency Injection - Services
-builder.Services.AddScoped<ITokenService>(sp => new TokenService(
+builder.Services.AddScoped<ITokenService>(sp => new WMS.Auth.API.Interfaces.TokenService(
     secretKey,
     jwtSettings["Issuer"] ?? "WMS.Auth.API",
     jwtSettings["Audience"] ?? "WMS.Client",

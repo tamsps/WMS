@@ -59,60 +59,57 @@ echo   [6/10] WMS.Payment.API (Port 62521) - Payment Processing
 echo   [7/10] WMS.Delivery.API (Port 62529) - Delivery Tracking
 echo   [8/10] WMS.Inventory.API (Port 62531) - Inventory Management
 echo   [9/10] WMS.Gateway (Port 5000) - API Gateway
-echo  [10/10] WMS.Web (Port 5001) - Web User Interface
+echo  [10/10] WMS.Web (Port 5223) - Web User Interface
 echo.
 echo ============================================================================
 echo.
 
 REM Start WMS.Auth.API
 echo [1/10] Starting WMS.Auth.API (Port 5190)...
-start "WMS.Auth.API - Port 5190" /d "%PROJECT_ROOT%\WMS.Auth.API" cmd /k "dotnet run --urls https://localhost:5190"
+start "WMS.Auth.API - Port 5190" /d "%PROJECT_ROOT%\WMS.Auth.API" cmd /k "dotnet run --urls http://localhost:5190"
 timeout /t 2 /nobreak
 
 REM Start WMS.Products.API
 echo [2/10] Starting WMS.Products.API (Port 62527)...
-start "WMS.Products.API - Port 62527" /d "%PROJECT_ROOT%\WMS.Products.API" cmd /k "dotnet run --urls https://localhost:62527"
+start "WMS.Products.API - Port 62527" /d "%PROJECT_ROOT%\WMS.Products.API" cmd /k "dotnet run --urls http://localhost:62527"
 timeout /t 2 /nobreak
 
 REM Start WMS.Locations.API
 echo [3/10] Starting WMS.Locations.API (Port 62522)...
-start "WMS.Locations.API - Port 62522" /d "%PROJECT_ROOT%\WMS.Locations.API" cmd /k "dotnet run --urls https://localhost:62522"
+start "WMS.Locations.API - Port 62522" /d "%PROJECT_ROOT%\WMS.Locations.API" cmd /k "dotnet run --urls http://localhost:62522"
 timeout /t 2 /nobreak
 
 REM Start WMS.Inbound.API
 echo [4/10] Starting WMS.Inbound.API (Port 62520)...
-start "WMS.Inbound.API - Port 62520" /d "%PROJECT_ROOT%\WMS.Inbound.API" cmd /k "dotnet run --urls https://localhost:62520"
+start "WMS.Inbound.API - Port 62520" /d "%PROJECT_ROOT%\WMS.Inbound.API" cmd /k "dotnet run --urls http://localhost:62520"
 timeout /t 2 /nobreak
 
 REM Start WMS.Outbound.API
 echo [5/10] Starting WMS.Outbound.API (Port 62519)...
-start "WMS.Outbound.API - Port 62519" /d "%PROJECT_ROOT%\WMS.Outbound.API" cmd /k "dotnet run --urls https://localhost:62519"
+start "WMS.Outbound.API - Port 62519" /d "%PROJECT_ROOT%\WMS.Outbound.API" cmd /k "dotnet run --urls http://localhost:62519"
 timeout /t 2 /nobreak
 
 REM Start WMS.Payment.API
 echo [6/10] Starting WMS.Payment.API (Port 62521)...
-start "WMS.Payment.API - Port 62521" /d "%PROJECT_ROOT%\WMS.Payment.API" cmd /k "dotnet run --urls https://localhost:62521"
+start "WMS.Payment.API - Port 62521" /d "%PROJECT_ROOT%\WMS.Payment.API" cmd /k "dotnet run --urls http://localhost:62521"
 timeout /t 2 /nobreak
 
 REM Start WMS.Delivery.API
 echo [7/10] Starting WMS.Delivery.API (Port 62529)...
-start "WMS.Delivery.API - Port 62529" /d "%PROJECT_ROOT%\WMS.Delivery.API" cmd /k "dotnet run --urls https://localhost:62529"
+start "WMS.Delivery.API - Port 62529" /d "%PROJECT_ROOT%\WMS.Delivery.API" cmd /k "dotnet run --urls http://localhost:62529"
 timeout /t 2 /nobreak
 
 REM Start WMS.Inventory.API
 echo [8/10] Starting WMS.Inventory.API (Port 62531)...
-start "WMS.Inventory.API - Port 62531" /d "%PROJECT_ROOT%\WMS.Inventory.API" cmd /k "dotnet run --urls https://localhost:62531"
+start "WMS.Inventory.API - Port 62531" /d "%PROJECT_ROOT%\WMS.Inventory.API" cmd /k "dotnet run --urls http://localhost:62531"
 timeout /t 2 /nobreak
 
 REM Start WMS.Gateway
 echo [9/10] Starting WMS.Gateway (Port 5000)...
-start "WMS.Gateway - Port 5000" /d "%PROJECT_ROOT%\WMS.Gateway" cmd /k "dotnet run --urls https://localhost:5000"
+start "WMS.Gateway - Port 5000" /d "%PROJECT_ROOT%\WMS.Gateway" cmd /k "dotnet run --urls http://localhost:5000"
 timeout /t 3 /nobreak
 
-REM Start WMS.Web
-echo [10/10] Starting WMS.Web (Port 5001)...
-start "WMS.Web - Port 5001" /d "%PROJECT_ROOT%\WMS.Web" cmd /k "dotnet run --urls https://localhost:5001"
-timeout /t 2 /nobreak
+
 
 echo.
 echo ============================================================================
@@ -126,14 +123,14 @@ echo   - Console output shows service startup logs
 echo   - Services will be ready when you see "Application started. Press Ctrl+C to shut down"
 echo.
 echo ACCESS POINTS:
-echo   - Web UI:              https://localhost:5001
-echo   - API Gateway:         https://localhost:5000
-echo   - Swagger/OpenAPI:     https://localhost:5000/swagger
-echo   - Swagger JSON:        https://localhost:5000/swagger/v1/swagger.json
+echo   - Web UI:              http://localhost:5223
+echo   - API Gateway:         http://localhost:5000
+echo   - Swagger/OpenAPI:     http://localhost:5000/swagger
+echo   - Swagger JSON:        http://localhost:5000/swagger/v1/swagger.json
 echo.
 echo USEFUL LINKS:
-echo   - Health Check:        https://localhost:5000/health
-echo   - Gateway Status:      https://localhost:5000/health/ready
+echo   - Health Check:        http://localhost:5000/health
+echo   - Gateway Status:      http://localhost:5000/health/ready
 echo.
 echo LOGIN CREDENTIALS (Default):
 echo   - Username: admin
